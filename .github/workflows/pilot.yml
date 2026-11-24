@@ -1,0 +1,45 @@
+name: Pilot validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: '3.12'
+      - name: Check paper table and deployed model
+        run: |
+          python -m compileall -q ml scripts
+          python ml/paper_tables.py
+          git diff --exit-code -- research/paper/tables
+          python -c "import hashlib,json,pathlib as p; a=p.Path('apps/mobile/assets'); assert hashlib.sha256((a/'hole_tile.onnx').read_bytes()).hexdigest()==json.loads((a/'hole_tile.json').read_text())['sha256']"
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          flutter-version: '3.38.3'
+          cache: true
+      - run: flutter pub get --enforce-lockfile
+      - run: dart format --output=none --set-exit-if-changed lib test
+      - run: flutter analyze --no-pub
+      - run: flutter test --no-pub
+      - run: flutter build apk --debug --target-platform android-arm64,android-x64 --split-per-abi --no-pub
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: reparaai-android-test
+          path: apps/mobile/build/app/outputs/flutter-apk/app-*-debug.apk
