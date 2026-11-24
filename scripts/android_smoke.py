@@ -2,6 +2,7 @@
 
 import argparse
 from contextlib import closing
+from fnmatch import fnmatchcase
 import json
 from pathlib import Path
 import re
@@ -43,7 +44,7 @@ class Android:
         while time.monotonic() < end:
             for node in self.nodes():
                 for value in (node.get("text", ""), node.get("content-desc", "")):
-                    if value.strip() == label or (label.endswith("*") and value.startswith(label[:-1])):
+                    if fnmatchcase(value.strip(), label):
                         return node
         return None
 

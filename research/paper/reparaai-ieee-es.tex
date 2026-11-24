@@ -1,5 +1,5 @@
 % Revisión 23-11-2026: versión principal en español con IEEEtran A4.
-% Cambios: IMRyD, comparación IoT/Flutter/Xamarin, evidencia Android y anexos.
+% Cambios: IMRyD, comparación IoT/Flutter/Xamarin, evidencia Android, transferencia y anexos.
 \documentclass[conference,a4paper]{IEEEtran}
 \usepackage[T1]{fontenc}
 \usepackage[spanish,es-tabla,es-nodecimaldot]{babel}
@@ -23,7 +23,7 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-ReparaAI es una aplicación Android de asistencia a la reparación textil. UCRA combina control de calidad de imagen, localización selectiva de agujeros, confirmación del usuario, consulta de procedimientos con fuente y registro local del resultado. En un estudio piloto con 407 vistas de 406 prendas de CISUTAC se compararon cuatro detectores, con 61 prendas reservadas para prueba. El modelo convolucional por mosaicos mostró 18 candidatos y acertó en 8 vistas con intersección sobre unión (IoU) de al menos 0,25. Siete vistas alcanzaron IoU de 0,50. Con el umbral seleccionado en validación, la precisión entre candidatos mostrados fue 44,4\%, frente a 19,7\% cuando el sistema mostró la mejor propuesta en cada vista. Todas las vistas de prueba contenían un agujero anotado. El prototipo ejecuta la inferencia y el registro sin conexión, mientras que la especificidad y la eficacia de las reparaciones requieren evaluación adicional.
+ReparaAI es una aplicación Android de asistencia a la reparación textil. UCRA combina control de calidad de imagen, localización selectiva de agujeros, confirmación del usuario, consulta de procedimientos con fuente y registro local. Se compararon cuatro detectores con 407 vistas de 406 prendas de CISUTAC, de las cuales 61 se reservaron para prueba. El modelo por mosaicos mostró 18 candidatos y acertó en 8 vistas con intersección sobre unión (IoU) de al menos 0,25. Siete vistas alcanzaron IoU de 0,50. La precisión entre propuestas fue 44,4\% con abstención y 19,7\% al mostrar una propuesta en cada vista. En 358 vistas externas de tela de FabriD, el modelo congelado localizó 0 de 77 vistas con agujeros y mostró 14 candidatos en 88 vistas con anotación vacía. La inferencia y el registro funcionan sin conexión. Los resultados delimitan el uso experimental del detector y motivan una validación independiente en prendas cotidianas.
 \end{abstract}
 \begin{IEEEkeywords}
 reparación textil, Flutter, visión por computador, abstención, recuperación de procedimientos
@@ -48,7 +48,7 @@ Se analizaron las tareas desde la captura hasta el cierre de la reparación. Se 
 Flutter ofrece una interfaz común con acceso a servicios nativos \cite{flutter}. Se eligió para integrar captura y ejecución de ONNX en Android con interfaz bilingüe y un proyecto iOS. Xamarin fue una alternativa estudiada durante el curso. Microsoft cerró su soporte en mayo de 2024 y dirige la migración hacia .NET MAUI \cite{xamarin}. En IoT, el NIST distingue una interfaz de red y un transductor en el dispositivo \cite{nist8259}. En ReparaAI, la cámara es el sensor y el teléfono procesa la información localmente. Un nodo de inspección conectado sería una extensión de IoT que requeriría su propia integración y pruebas.
 
 \subsection{Diseño del sistema}
-Flutter orquesta el selector nativo, el procesamiento de imagen, el detector ONNX, el catálogo y SQLite. La resolución mínima de cada eje es 384 píxeles. La app comprueba luminancia media entre 0,07 y 0,96 y energía laplaciana de al menos 0,00012 en la imagen de control. Al consultar el catálogo, la aplicación filtra por daño, tela confirmada y disponibilidad de máquina. Se incluyen cuatro técnicas procedentes de guías localizables \cite{guides,patches}. Los planes y su fuente se guardan por sesión. Las fotos se exportan a JPEG sin metadatos EXIF antes de guardarlas localmente. El diagrama de la Fig.~\ref{fig:arquitectura} resume el flujo.
+Flutter orquesta la selección de fotos, el procesamiento, el detector ONNX, el catálogo y SQLite. La resolución mínima es 384 píxeles por eje. La app comprueba luminancia media entre 0,07 y 0,96 y energía laplaciana de al menos 0,00012. El catálogo filtra por daño, tela y equipo e incluye cuatro técnicas con fuente \cite{guides,patches}. Los planes y sus referencias se guardan por sesión. Las fotos se exportan a JPEG sin EXIF. Un control permite comparar el antes y después visualmente. En GitHub Pages \cite{githubpages}, el mismo flujo ejecuta ONNX Runtime Web mediante WebAssembly en el navegador \cite{onnxweb} y conserva el diario en IndexedDB. La Fig.~\ref{fig:arquitectura} resume el flujo.
 
 \begin{figure}[!t]
 \centering
@@ -102,6 +102,10 @@ Sea $\hat b$ la caja de mayor puntuación y $B$ el conjunto de cajas anotadas en
 
 La prueba funcional reproduce una sesión completa en un emulador Android 16 en modo avión con un archivo de prueba seleccionado de CISUTAC. Verifica el selector de galería, el candidato, la confirmación, el plan con fuente, el avance, el reinicio, la evidencia y el resultado persistido. Este caso seleccionado comprueba la integración del software. Las pantallas de la Fig.~\ref{fig:capturas} muestran el recorrido ejecutado.
 
+Para explorar un cambio de dominio, se ejecutó el ONNX móvil sobre las 358 vistas de prueba oficiales de FabriD v1 \cite{fabrid}, sin entrenamiento ni ajuste de umbral. Se separaron vistas con polígonos de agujero, vistas con otras clases anotadas y vistas con archivo de anotación vacío. Los polígonos se transformaron en cajas envolventes. Se reporta cobertura por grupo e intervalos de Wilson descriptivos por vista.
+
+Para estudiar la búsqueda guiada, se limitó la selección del centro a una ventana de 20\% por eje alrededor de una marca. En CISUTAC se simuló la marca a partir del centro de la mayor anotación, con desplazamientos uniformes de hasta seis puntos porcentuales por eje. Se conservó el mismo ONNX y el mismo umbral. Este diseño mide el efecto de una marca aproximadamente correcta en una prueba controlada.
+
 \section{Resultados}
 
 \begin{table}[!t]
@@ -127,6 +131,26 @@ Al mostrar la propuesta de cada vista, los mosaicos acertaron en 12 de 61 casos 
 
 En el caso seleccionado para integración, la caja del emulador obtuvo IoU de 0,699 con la anotación y el procesamiento tomó 4,04 s en una ejecución de depuración. Se verificaron tres pasos guardados y la persistencia de ambas fotos tras reiniciar. El tiempo ilustra la ejecución en el emulador. La latencia en teléfonos físicos permanece por medir.
 
+\begin{table}[!t]
+\centering
+\caption{Comparación del mismo ONNX en las 61 vistas de CISUTAC}
+\label{tab:guiada}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lrrrr}
+\toprule
+Búsqueda & Mostr. & IoU $\geq$ 0,25 & IoU $\geq$ 0,50 & Prec. \\
+\midrule
+Completa & 18 & 8 & 7 & 44,4\% \\
+Marca simulada & 16 & 11 & 8 & 68,8\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+La Tabla~\ref{tab:guiada} muestra el incremento de aciertos de 8 a 11 con una zona acotada. La marca simulada usó la anotación de referencia y representa ayuda manual idealizada. Las mejoras no estiman la precisión que lograrían participantes sin acceso a las anotaciones.
+
+\subsection{Transferencia a FabriD}
+El detector mostró 16 candidatos en 77 vistas con agujeros, sin coincidencias a IoU de 0,25. Emitió 14 candidatos en 88 vistas con anotación vacía (15,9\%, IC del 95\% de 9,7 a 25,0) y 55 en 193 vistas con otros defectos (28,5\%, IC del 95\% de 22,6 a 35,2). La identidad física de cada pieza no consta. Los puntos e intervalos resumen el archivo de prueba de telas. La anotación vacía se interpreta según la exportación y no equivale a una inspección física independiente.
+
 \begin{figure}[!t]
 \centering
 \includegraphics[width=\columnwidth]{riesgo_cobertura.pdf}
@@ -139,17 +163,17 @@ La comparación sugiere que un detector que conserva mayor detalle espacial pued
 
 Frente a trabajos centrados en la descripción de la prenda \cite{ge2019} o en la condición para clasificación de residuos \cite{nauman,cisutac}, UCRA conserva la relación entre una región propuesta, la confirmación del usuario y la guía utilizada. La integración móvil aporta trazabilidad al ensayo. La estrategia de recomendación cubre pocos casos y requiere revisión independiente de compatibilidad.
 
-El benchmark proviene de un solo proveedor, contiene fondos procesados y carece de vistas negativas verificadas. La especificidad, la calibración y la transferencia a fotos de celular permanecen abiertas. Una caja principal por vista no permite estimar la detección completa de múltiples defectos. La app registra un resultado declarado por el usuario. El estudio carece de mediciones de resistencia de costuras, uso por participantes y desempeño en dispositivos físicos. La investigación siguiente debe incluir prendas íntegras, daños ambiguos, variación de iluminación, negativos difíciles y revisión doble de anotaciones. Para la recuperación se requiere un conjunto de casos revisado por especialistas.
+El benchmark de prendas de CISUTAC contiene fondos procesados y carece de vistas negativas verificadas. FabriD aporta un dominio externo de telas con anotaciones distintas y exhibe una pérdida de localización. Ambas evaluaciones dejan abierta la especificidad, calibración y transferencia a fotografías de prendas tomadas con un celular. Una caja principal por vista no permite estimar detección de múltiples defectos. La app guarda un resultado declarado por el usuario. El estudio carece de mediciones de resistencia de costuras, pruebas de uso con participantes y desempeño en teléfonos físicos. La investigación siguiente debe incluir prendas íntegras, daños ambiguos, variación de iluminación, negativos difíciles y revisión doble de anotaciones. La recuperación requiere casos revisados por especialistas.
 
 \section{Conclusiones}
 ReparaAI une detección selectiva, contexto confirmado, procedimientos con fuente y persistencia sin conexión. El piloto cuantifica la baja localización inicial y el intercambio entre aciertos y cobertura. La asistencia manual permite consultar una guía cuando la detección se abstiene. La evidencia disponible sustenta una validación técnica inicial del flujo y delimita las pruebas necesarias para establecer su fiabilidad.
 
 \appendices
 \section{Reproducibilidad y trazabilidad}
-El repositorio \href{https://github.com/OwerLopez/RepairAI}{OwerLopez/RepairAI} incluye adquisición, identificación de revisión, entrenamiento, tablas generadas, validación de ONNX, catálogo y prueba Android. La foto de la prueba se identifica por archivo en el registro técnico. El detector móvil está versionado y sus metadatos registran SHA-256. La colección y el protocolo de anotación se describen en los anexos técnicos del repositorio.
+El repositorio \href{https://github.com/OwerLopez/RepairAI}{OwerLopez/RepairAI} incluye adquisición, entrenamiento, tablas generadas, validación de ONNX, catálogo y prueba Android. Se puede abrir la \href{https://owerlopez.github.io/RepairAI/}{aplicación web} y descargar el \href{https://github.com/OwerLopez/RepairAI/releases/tag/v0.2.0}{APK de pruebas}. La foto de integración se identifica por archivo. Los metadatos del detector registran SHA-256. El protocolo de anotación y los resultados están en los anexos del repositorio.
 
 \section{Registro de revisión}
-La revisión del 23 de noviembre de 2026 incorpora formato IEEE A4, contenido IMRyD en español, análisis de IoT y Xamarin, y la comparación agrupada de detectores. En el código fuente se incluyeron comentarios de revisión. Afiliaciones, autor de correspondencia, declaraciones de intereses y funciones CRediT quedan por confirmar por el equipo.
+La revisión del 23 de noviembre de 2026 incorpora formato IEEE A4, contenido IMRyD en español, análisis de IoT y Xamarin, comparación agrupada y transferencia a FabriD. El código fuente incluye comentarios de revisión. Afiliaciones, autor de correspondencia, declaraciones de intereses y funciones CRediT quedan por confirmar por el equipo.
 
 \IEEEtriggeratref{9}
 \bibliographystyle{IEEEtran}

@@ -132,8 +132,9 @@ def tensor(rgb, device):
     return torch.from_numpy(np.ascontiguousarray(np.moveaxis(rgb, -1, -3))).to(device, dtype=torch.float32) / 255
 
 
-def decode(logits, geometry):
-    y, x = np.unravel_index(logits[0].argmax(), logits[0].shape)
+def decode(logits, geometry, eligible=None):
+    scores = logits[0] if eligible is None else np.where(eligible, logits[0], -np.inf)
+    y, x = np.unravel_index(scores.argmax(), scores.shape)
     score = float(1 / (1 + np.exp(-np.clip(logits[0, y, x], -60, 60))))
     dx, dy, w, h = geometry[:, y, x]
     center = np.array([x + np.clip(dx, 0, 1), y + np.clip(dy, 0, 1)]) / CELLS

@@ -1,0 +1,18 @@
+{
+  "model": "hole-center-fda922fd14bb",
+  "threshold": 0.35000000000000003,
+  "focus_size": 0.2,
+  "uniform_jitter_each_axis": 0.06,
+  "seed": 203,
+  "mark_source": "simulated from largest expert-annotated box",
+  "test": {
+    "views": 61,
+    "positive_views": 61,
+    "shown": 16,
+    "correct_iou25": 11,
+    "correct_iou50": 8,
+    "coverage": 0.26229508196721313,
+    "precision_iou25": 0.6875,
+    "localized_positive_fraction": 0.18032786885245902
+  }
+}

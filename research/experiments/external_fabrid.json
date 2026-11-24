@@ -1,0 +1,53 @@
+{
+  "source": "https://doi.org/10.17632/vncdwps24r.1",
+  "archive_sha256": "4944cec7f54ce3f9120ed243ea8c33f3ff3a3d4c39556fd06e7cfe3a5b3a05c3",
+  "model": "hole-center-fda922fd14bb",
+  "threshold": 0.35000000000000003,
+  "test_only": {
+    "hole": {
+      "views": 77,
+      "positive_views": 77,
+      "shown": 16,
+      "correct_iou25": 0,
+      "correct_iou50": 0,
+      "coverage": 0.2077922077922078,
+      "precision_iou25": 0.0,
+      "localized_positive_fraction": 0.0,
+      "coverage_wilson_95": [
+        0.13214965937388248,
+        0.3112062366004674
+      ],
+      "quality_rejected": 21
+    },
+    "empty_annotation": {
+      "views": 88,
+      "positive_views": 0,
+      "shown": 14,
+      "correct_iou25": 0,
+      "correct_iou50": 0,
+      "coverage": 0.1590909090909091,
+      "precision_iou25": 0.0,
+      "localized_positive_fraction": null,
+      "coverage_wilson_95": [
+        0.09719813761632919,
+        0.24950313936490806
+      ],
+      "quality_rejected": 26
+    },
+    "other_annotated_defect": {
+      "views": 193,
+      "positive_views": 0,
+      "shown": 55,
+      "correct_iou25": 0,
+      "correct_iou50": 0,
+      "coverage": 0.2849740932642487,
+      "precision_iou25": 0.0,
+      "localized_positive_fraction": null,
+      "coverage_wilson_95": [
+        0.2259700540249708,
+        0.352371109631492
+      ],
+      "quality_rejected": 54
+    }
+  }
+}

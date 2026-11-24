@@ -6,7 +6,7 @@ The whole-image detector uses aggressive spatial reduction for computational eff
 
 \section{Limitations}
 
-The benchmark is a single-source, exploratory sample of garments with annotated holes. Image-level specificity, prevalence-sensitive calibration, robustness to natural mobile capture, and generalization to other defect classes remain unmeasured. The split relies on file naming as the physical identity proxy and can miss duplicates with unrelated identifiers. The detector returns one region per view, so the reported metric does not replace per-instance mean average precision. The local catalog covers a few everyday repairs and has not been reviewed by an independent textile expert panel. Repair quality, task completion by participants, device latency, memory, energy, and structural integrity remain open measurement questions.
+The main garment benchmark is a single-source exploratory sample of garments with annotated holes. The FabriD test measures transfer to a separate benchmark of fabrics. Its observed false candidates do not establish specificity in handheld garment photos. Prevalence-sensitive calibration and robustness to natural garment capture remain unmeasured. The garment split relies on file naming as the physical identity proxy and can miss duplicates with unrelated identifiers. The detector returns one region per view, so the reported metric does not replace per-instance mean average precision. The local catalog covers a few everyday repairs and has not been reviewed by an independent textile expert panel. Repair quality, participant completion, physical-device latency, memory, energy, and structural integrity remain open measurement questions.
 
 \section{Conclusion}
 

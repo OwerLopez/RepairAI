@@ -2,19 +2,21 @@
 
 Aplicación Android para analizar una fotografía de una prenda, consultar una guía de reparación con fuente y guardar el progreso y el resultado sin conexión. La interfaz inicia en español y permite cambiar a inglés. El trabajo de investigación **UCRA** evalúa localización visual de agujeros y el efecto de la abstención.
 
-[Artículo IEEE en español](research/paper/dist/reparaai-ieee-es.pdf) · [Pruebas](docs/TESTING.md) · [Estado del proyecto](docs/PROJECT_STATUS.md) · [Preparación para Google Play](docs/PLAY_STORE.md)
+[Abrir ReparaAI web](https://owerlopez.github.io/RepairAI/) · [Descargar APK ARM64](https://github.com/OwerLopez/RepairAI/releases/latest/download/ReparaAI-android-arm64.apk) · [Artículo IEEE en español](research/paper/dist/reparaai-ieee-es.pdf) · [Estado de los módulos](docs/PROJECT_STATUS.md)
 
 ## Flujo de una reparación
 
 1. Toma una fotografía o selecciónala desde el dispositivo. La app verifica resolución, iluminación y enfoque.
-2. Inspecciona la zona sugerida por el detector experimental o identifica el daño por tu cuenta cuando se abstiene.
+2. Inspecciona la zona sugerida por el detector experimental. Puedes señalar un área para acotar la búsqueda o identificar el daño manualmente.
 3. Confirma el daño, el tejido y las herramientas disponibles. El catálogo local ofrece procedimientos para agujeros, desgarros o costuras rectas abiertas según ese contexto.
 4. Abre el procedimiento, revisa su fuente y marca los pasos completados. Si sales de la app, puedes continuar desde Historial.
-5. Adjunta una foto del resultado y registra el desenlace. Los datos quedan en el teléfono. La guía original se abre en el navegador si hay conexión.
+5. Adjunta una foto del resultado, compárala con la inicial y registra el desenlace. El historial queda en el teléfono o navegador que uses. La guía original se abre en el navegador si hay conexión.
 
 ![Escáner, diagnóstico, reparación e historial en Android](research/paper/figures/flujo_android.png)
 
-## Instalación y ejecución local
+## Web e instalación local
+
+La [app web publicada](https://owerlopez.github.io/RepairAI/) conserva el mismo flujo y ejecuta el modelo dentro del navegador. SQLite usa IndexedDB para persistir el historial web. La primera carga requiere descargar el sitio y el runtime web. El [APK de prueba ARM64](https://github.com/OwerLopez/RepairAI/releases/tag/v0.2.0) permite instalar la versión móvil en Android compatible.
 
 **Requisitos** · Flutter 3.38.3, SDK Android con API 36 y JDK 17 o superior. Usa Android Studio Device Manager o un teléfono con depuración USB. El mínimo de instalación es Android 7.0 (API 24). [Instalar Flutter](https://docs.flutter.dev/install)
 
@@ -73,7 +75,7 @@ La prueba de integración usa un emulador Android y una fotografía real de CISU
 
 ## Investigación y artículo
 
-La evaluación conserva una sola variante de mayor resolución por vista y asigna prendas completas a entrenamiento, validación o prueba. El modelo desplegado por mosaicos mostró 18 candidatos en 61 vistas de prueba, con 8 en la región anotada a IoU 0,25 y 7 a IoU 0,50. El conjunto de prueba contiene prendas con daño anotado. La especificidad, la generalización a teléfonos físicos y la evaluación de procedimientos con especialistas siguen pendientes.
+La evaluación conserva una sola variante de mayor resolución por vista y asigna prendas completas a entrenamiento, validación o prueba. El análisis completo localizó 8 de 61 vistas reservadas a IoU 0,25. Con marcas idealizadas se localizaron 11 de 61. En el dominio externo de FabriD se localizaron 0 de 77 vistas con agujeros y hubo 14 propuestas en 88 vistas con anotaciones vacías. Faltan confirmación con fotos tomadas por usuarios, validación en teléfonos físicos y evaluación independiente de los procedimientos.
 
 - [Artículo IEEE A4 en español](research/paper/dist/reparaai-ieee-es.pdf) y [fuentes LaTeX](research/paper/)
 - [Revisión de datasets y licencias](research/datasets/INVENTORY.md)

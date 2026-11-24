@@ -16,3 +16,6 @@ Compared with the forest, tiling increased the localized-positive fraction by 8.
 \end{figure}
 
 The software smoke test is a separate integration check using a selected real CISUTAC photo. It tests Android photo selection, localization display, user confirmation, retrieval, persisted progress, and outcome recording. Selecting an example this way cannot estimate localization accuracy. The same image can be used as an attachment fixture to exercise evidence storage without implying that any physical repair occurred.
+
+\subsection{External fabric benchmark}
+We ran the deployed ONNX checkpoint without threshold adjustment on all 358 published test images of FabriD V1 \cite{fabrid}. The tiled detector emitted 16 candidates on 77 views containing annotated holes and none met IoU 0.25. It emitted candidates on 14 of 88 views with empty annotations (15.9\%, Wilson 95\% interval 9.7 to 25.0) and 55 of 193 views with other annotated defects (28.5\%, 22.6 to 35.2). These are image-level descriptive intervals for an external fabric dataset. Physical specimen identities are unknown and empty annotations have not been independently verified.
