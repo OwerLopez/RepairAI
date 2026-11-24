@@ -1,0 +1,61 @@
+{
+  "version": "textile-guides-1",
+  "procedures": [
+    {
+      "id": "denim-darn",
+      "damage": "hole",
+      "materials": ["denim"],
+      "source": "iFixit · How to Darn a Hole in Denim Jeans by Hand",
+      "url": "https://www.ifixit.com/Guide/How%2Bto%2BDarn%2Ba%2BHole%2Bin%2BDenim%2BJeans%2Bby%2BHand/140756",
+      "title": ["Zurcido manual con respaldo", "Hand darning with backing"],
+      "tools": ["Aguja, hilo, tijeras y retazo de denim", "Needle, thread, scissors and a denim scrap"],
+      "steps": [
+        ["Pon la prenda del revés y coloca el retazo bajo el agujero. Asegúrate de que alcance tejido firme en todo el contorno.", "Turn the garment inside out and place the scrap behind the hole. Check that it reaches sound fabric all around."],
+        ["Sujeta el respaldo con puntadas cortas. Mantén separada la otra capa de la prenda.", "Secure the backing with short stitches. Keep the second garment layer clear."],
+        ["Cruza la zona desgastada con hileras de puntadas. Añade una segunda serie transversal y remata el hilo.", "Work rows of stitches across the worn area. Add a second set across the first and secure the thread."]
+      ]
+    },
+    {
+      "id": "woven-patch",
+      "damage": "hole",
+      "materials": ["denim", "woven"],
+      "source": "Patagonia / iFixit · Blanket Stitch on a Patch",
+      "url": "https://www.ifixit.com/Guide/Blanket%2BStitch%2Bon%2Ba%2BPatch/185394",
+      "title": ["Parche cosido a mano", "Hand-sewn patch"],
+      "tools": ["Aguja, hilo, alfileres, tijeras y tela compatible", "Needle, thread, pins, scissors and compatible fabric"],
+      "steps": [
+        ["Extiende la prenda y prepara un parche que cubra el agujero y llegue a tejido firme por todos los lados.", "Lay the garment flat and prepare a patch that covers the hole and reaches sound fabric on every side."],
+        ["Fija el parche en posición. Introduce la aguja desde el reverso y forma un lazo con el hilo en el borde.", "Pin the patch in place. Bring the needle up from the underside and form a loop at the edge."],
+        ["Pasa la aguja por el lazo de cada puntada y repite alrededor del borde con tensión uniforme. Remata y retira los alfileres.", "Pass the needle through each stitch loop and repeat around the edge with even tension. Tie off and remove the pins."]
+      ]
+    },
+    {
+      "id": "straight-seam",
+      "damage": "seam",
+      "materials": ["denim", "woven"],
+      "source": "Patagonia / iFixit · Repair a Torn Seam",
+      "url": "https://www.ifixit.com/Guide/How+to+Repair+a+Torn+Seam+in+your+Patagonia+Clothing/19464",
+      "title": ["Cerrar una costura recta abierta", "Close an opened straight seam"],
+      "tools": ["Máquina de coser, hilo, alfileres y tijeras", "Sewing machine, thread, pins and scissors"],
+      "steps": [
+        ["Pon la prenda del revés. Verifica que se soltó el hilo de la costura y que los bordes de tela siguen firmes.", "Turn the garment inside out. Check that the seam thread has failed and the fabric edges are still sound."],
+        ["Alinea y sujeta los bordes sobre la línea de costura original. Retira cada alfiler antes de acercarlo a la aguja.", "Align and pin the edges along the original seam line. Remove each pin before it reaches the needle."],
+        ["Cose sobre la línea original y asegura los dos extremos con puntadas de retroceso.", "Stitch along the original line and backstitch at both ends to secure it."]
+      ]
+    },
+    {
+      "id": "woven-tear",
+      "damage": "tear",
+      "materials": ["denim", "woven"],
+      "source": "Patagonia / iFixit · Baseball Stitch on a Tear",
+      "url": "https://www.ifixit.com/Guide/Baseball%2BStitch%2Bon%2Ba%2BTear/195143",
+      "title": ["Unir un desgarro con puntada de béisbol", "Close a tear with baseball stitch"],
+      "tools": ["Aguja, hilo y tijeras", "Needle, thread and scissors"],
+      "steps": [
+        ["Extiende el tejido y aproxima los bordes del desgarro sin estirar la tela.", "Lay the fabric flat and bring the edges of the tear together without stretching it."],
+        ["Alterna las puntadas a ambos lados para formar cruces sobre el desgarro.", "Alternate stitches on each side to form crosses over the tear."],
+        ["Remata el hilo y revisa si los bordes quedan planos y unidos.", "Secure the thread and check that the edges lie flat and meet."]
+      ]
+    }
+  ]
+}

@@ -41,12 +41,23 @@ def read_export(root):
             upstream.setdefault(group, set()).add(split)
             view = path.name.split(".rf.")[0]
             fields = [line.split() for line in (labels / f"{path.stem}.txt").read_text().splitlines() if line.strip()]
-            if any(len(row) != 5 or row[0] != "0" for row in fields):
-                raise ValueError(f"Invalid annotation format: {path.name}")
-            yolo = np.array([row[1:] for row in fields], dtype=float).reshape(-1, 4)
-            if not np.isfinite(yolo).all() or np.any(yolo < 0) or np.any(yolo > 1) or np.any(yolo[:, 2:] == 0):
-                raise ValueError(f"Invalid normalized geometry: {path.name}")
-            boxes = np.clip(np.column_stack((yolo[:, :2] - yolo[:, 2:] / 2, yolo[:, :2] + yolo[:, 2:] / 2)), 0, 1)
+            parsed = []
+            for row in fields:
+                if row[0] != "0" or len(row) < 5 or len(row) % 2 == 0 or len(row) == 7:
+                    raise ValueError(f"Invalid annotation format: {path.name}")
+                coordinates = np.array(row[1:], dtype=float)
+                if not np.isfinite(coordinates).all() or np.any(coordinates < 0) or np.any(coordinates > 1):
+                    raise ValueError(f"Invalid normalized coordinates: {path.name}")
+                if len(coordinates) == 4:
+                    center, half = coordinates[:2], coordinates[2:] / 2
+                    box = np.clip(np.r_[center - half, center + half], 0, 1)
+                else:
+                    polygon = coordinates.reshape(-1, 2)
+                    box = np.r_[polygon.min(axis=0), polygon.max(axis=0)]
+                if np.any(box[2:] <= box[:2]):
+                    raise ValueError(f"Degenerate annotation: {path.name}")
+                parsed.append(box)
+            boxes = np.array(parsed, dtype=float).reshape(-1, 4)
             with Image.open(path) as image:
                 dimensions = image.size
             key = (group, view)

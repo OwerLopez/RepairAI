@@ -11,12 +11,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import average_precision_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
-from vision import BOXES, GRID, SCALES, features, grayscale, overlaps, quality, read_export
+from vision import BOXES, GRID, SCALES, WINDOWS, features, grayscale, overlaps, quality, read_export
 
 
 SEED = 104
@@ -46,7 +45,6 @@ def train(records):
             positive = rng.choice(positive, 128, replace=False)
         negative = rng.choice(negative, min(len(negative), max(96, 5 * len(positive))), replace=False)
         chosen = np.concatenate((positive, negative))
-        from vision import WINDOWS
         samples.append(features(grayscale(record.path), WINDOWS[chosen]))
         labels.append(match[chosen] >= IOU)
     x, y = np.concatenate(samples), np.concatenate(labels)
@@ -109,8 +107,11 @@ def intervals(rows, threshold):
     results = [metrics([row for i in rng.integers(len(groups), size=len(groups)) for row in groups[i]], threshold)
                for _ in range(1000)]
     keys = ("coverage", "precision_iou25", "localized_positive_fraction")
-    return {key: np.percentile(values, [2.5, 97.5]).tolist() if values else None
-            for key in keys if (values := [m[key] for m in results if m[key] is not None]) or results}
+    bounds = {}
+    for key in keys:
+        values = [m[key] for m in results if m[key] is not None]
+        bounds[key] = np.percentile(values, [2.5, 97.5]).tolist() if values else None
+    return bounds
 
 
 def plot(rows, path):
@@ -174,7 +175,6 @@ def main(args):
             **metrics(rows, thresholds[name]),
             "always_predict": metrics(rows, 0, quality_gate=False),
             "threshold_only": metrics(rows, thresholds[name], quality_gate=False),
-            "image_presence_ap": float(average_precision_score([r["present"] for r in rows], [r["score"] for r in rows])),
             "bootstrap_95": intervals(rows, thresholds[name]),
             "quality_rejected": sum(not r["quality"] for r in rows),
         } for name, rows in test.items()},
@@ -189,7 +189,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=Path(".data/holes"))
-    parser.add_argument("--model", type=Path, default=Path("apps/mobile/assets/hole_model.json"))
+    parser.add_argument("--model", type=Path, default=Path(".data/hole_model.json"))
     parser.add_argument("--report", type=Path, default=Path("research/experiments/vision_results.json"))
     parser.add_argument("--figure", type=Path, default=Path("research/paper/figures/risk_coverage.pdf"))
     main(parser.parse_args())
