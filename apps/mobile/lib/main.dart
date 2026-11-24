@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'glass.dart';
 import 'home.dart';
 import 'journal.dart';
 import 'procedures.dart';
-import 'ui.dart';
 import 'vision.dart';
 
 Future<void> main() async {
@@ -49,29 +49,50 @@ class _ReparaAppState extends State<ReparaApp> {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = ColorScheme.fromSeed(seedColor: moss).copyWith(
-      surface: paper,
-      onSurface: ink,
-      primary: moss,
-      onPrimary: Colors.white,
-      primaryContainer: lime,
-      onPrimaryContainer: ink,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: ice,
+          brightness: Brightness.dark,
+        ).copyWith(
+          surface: deepBlue,
+          onSurface: frost,
+          onSurfaceVariant: softText,
+          primary: ice,
+          onPrimary: midnight,
+          primaryContainer: const Color(0xff1c505a),
+          onPrimaryContainer: frost,
+          outline: const Color(0xff527389),
+        );
     return MaterialApp(
       title: 'ReparaAI',
       debugShowCheckedModeBanner: false,
       locale: Locale(language),
       supportedLocales: const [Locale('es'), Locale('en')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      builder: (context, child) => GlassBackdrop(child: child!),
       theme: ThemeData(
         colorScheme: scheme,
-        scaffoldBackgroundColor: paper,
+        scaffoldBackgroundColor: Colors.transparent,
         appBarTheme: const AppBarTheme(
-          backgroundColor: paper,
-          foregroundColor: ink,
+          backgroundColor: Color(0xe0112135),
+          foregroundColor: frost,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
         ),
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+        navigationBarTheme: const NavigationBarThemeData(
+          backgroundColor: Color(0xf0102235),
+          indicatorColor: Color(0xff20525d),
+          surfaceTintColor: Colors.transparent,
+        ),
+        bottomSheetTheme: const BottomSheetThemeData(backgroundColor: deepBlue),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xda0b1d31),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+          enabledBorder: OutlineInputBorder(
+            borderSide: const BorderSide(color: Color(0xff527389)),
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(

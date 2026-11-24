@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'diagnosis_page.dart';
+import 'glass.dart';
 import 'journal.dart';
 import 'procedures.dart';
 import 'repair_page.dart';
@@ -48,7 +50,7 @@ class _HomeState extends State<Home> {
   );
 
   Future<void> _recover() async {
-    if (defaultTargetPlatform != TargetPlatform.android) return;
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return;
     try {
       final target = await widget.journal.preference('pendingCapture');
       final lost = await picker.retrieveLostData();
@@ -124,7 +126,8 @@ class _HomeState extends State<Home> {
     if (await photo.length() > 28 * 1024 * 1024) {
       throw const FormatException('Image size');
     }
-    final scan = await widget.vision.scan(await photo.readAsBytes());
+    final bytes = await photo.readAsBytes();
+    final scan = await widget.vision.scan(bytes);
     if (!mounted) return;
     final id = await Navigator.of(context).push<int>(
       MaterialPageRoute(
@@ -132,6 +135,7 @@ class _HomeState extends State<Home> {
           scan: scan,
           journal: widget.journal,
           knowledge: widget.knowledge,
+          refine: (point) => widget.vision.scan(bytes, focus: point),
         ),
       ),
     );
@@ -152,9 +156,16 @@ class _HomeState extends State<Home> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'ReparaAI',
-          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -.6),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Glyph(Icons.center_focus_strong_rounded, size: 33),
+            SizedBox(width: 10),
+            Text(
+              'ReparaAI',
+              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: -.6),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -192,25 +203,34 @@ class _HomeState extends State<Home> {
 
   Widget _scanner(BuildContext context) => PageBody(
     children: [
-      Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: ink,
-          borderRadius: BorderRadius.circular(28),
-        ),
+      GlassCard(
+        accent: true,
+        padding: const EdgeInsets.all(23),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Icon(
-              Icons.center_focus_strong_rounded,
-              size: 54,
-              color: lime,
+            Row(
+              children: [
+                const Glyph(Icons.document_scanner_outlined, size: 55),
+                const Spacer(),
+                Icon(Icons.phonelink_lock_rounded, size: 17, color: ice),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    context.t('Funciona sin conexión', 'Works offline'),
+                    style: const TextStyle(
+                      color: ice,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
             Text(
               context.t('Repara una prenda', 'Repair a garment'),
               style: const TextStyle(
-                color: paper,
+                color: frost,
                 fontSize: 36,
                 height: 1.06,
                 fontWeight: FontWeight.w700,
@@ -220,10 +240,14 @@ class _HomeState extends State<Home> {
             const SizedBox(height: 14),
             Text(
               context.t(
-                'Busca un posible agujero en una foto y sigue un procedimiento de reparación con fuente.',
-                'Look for a possible hole in a photo and follow a repair procedure with a source.',
+                'Examina el daño con una foto y sigue una guía compatible con tu prenda.',
+                'Inspect the damage with a photo and follow a guide that fits your garment.',
               ),
-              style: const TextStyle(color: lime, fontSize: 16, height: 1.4),
+              style: const TextStyle(
+                color: softText,
+                fontSize: 16,
+                height: 1.4,
+              ),
             ),
           ],
         ),
@@ -247,13 +271,59 @@ class _HomeState extends State<Home> {
           textAlign: TextAlign.center,
         ),
       ],
-      Text(
-        context.t(
-          'Extiende la prenda, ilumínala de manera uniforme y acerca la cámara a la zona dañada. Las fotos y el historial se guardan en este dispositivo al iniciar una reparación.',
-          'Lay the garment flat, use even light and frame the damaged area closely. Photos and history are stored on this device when you start a repair.',
+      GlassCard(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Glyph(Icons.light_mode_outlined, size: 36),
+            const SizedBox(width: 11),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    context.t('Prepara la foto', 'Set up your photo'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.t(
+                      'Extiende la prenda y acércate al daño con luz uniforme.',
+                      'Lay the garment flat and frame the damage closely in even light.',
+                    ),
+                    style: const TextStyle(color: softText),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        style: Theme.of(context).textTheme.bodyMedium,
       ),
+      if (kIsWeb)
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 10,
+          children: [
+            TextButton.icon(
+              onPressed: () => launchUrl(
+                Uri.parse(
+                  'https://github.com/OwerLopez/RepairAI/releases/latest/download/ReparaAI-android-arm64.apk',
+                ),
+              ),
+              label: Text(context.t('Descargar APK', 'Download APK')),
+              icon: const Icon(Icons.download_outlined),
+            ),
+            TextButton.icon(
+              onPressed: () => launchUrl(
+                Uri.parse(
+                  'https://github.com/OwerLopez/RepairAI/blob/main/research/paper/dist/reparaai-ieee-es.pdf',
+                ),
+              ),
+              label: Text(context.t('Artículo IEEE', 'IEEE paper')),
+              icon: const Icon(Icons.description_outlined),
+            ),
+          ],
+        ),
     ],
   );
 
@@ -261,9 +331,19 @@ class _HomeState extends State<Home> {
     future: sessions,
     builder: (context, snapshot) => PageBody(
       children: [
-        Text(
-          context.t('Tus reparaciones', 'Your repairs'),
-          style: Theme.of(context).textTheme.headlineMedium,
+        GlassCard(
+          child: Row(
+            children: [
+              const Glyph(Icons.history_rounded),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  context.t('Tus reparaciones', 'Your repairs'),
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+              ),
+            ],
+          ),
         ),
         if (snapshot.hasError)
           OutlinedButton(
@@ -278,16 +358,25 @@ class _HomeState extends State<Home> {
         else if (!snapshot.hasData)
           const LinearProgressIndicator()
         else if (snapshot.data!.isEmpty)
-          Text(
-            context.t(
-              'Las reparaciones que inicies aparecerán aquí.',
-              'Repairs will appear here once you start them.',
+          GlassCard(
+            child: Text(
+              context.t(
+                'Las reparaciones que inicies aparecerán aquí.',
+                'Repairs will appear here once you start them.',
+              ),
             ),
           )
         else
           for (final row in snapshot.data!)
-            Card(
+            GlassCard(
+              padding: EdgeInsets.zero,
               child: ListTile(
+                leading: Glyph(
+                  row['outcome'] == 'repaired'
+                      ? Icons.check_circle_outline
+                      : Icons.layers_outlined,
+                  size: 36,
+                ),
                 title: Text(
                   Procedure(
                     jsonDecode(row['plan'] as String) as Map<String, dynamic>,

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'glass.dart';
 import 'journal.dart';
 import 'procedures.dart';
 import 'ui.dart';
@@ -161,17 +162,34 @@ class _RepairPageState extends State<RepairPage> {
         jsonDecode(row['diagnosis'] as String) as Map<String, dynamic>;
     return PageBody(
       children: [
-        Text(
-          plan.title(context.language),
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        Text(outcomeLabel(context, finished)),
-        LinearProgressIndicator(
-          value: count / steps.length,
-          semanticsLabel: context.t('Avance de pasos', 'Step progress'),
-        ),
-        Text(
-          '$count / ${steps.length} ${context.t('pasos completados', 'steps complete')}',
+        GlassCard(
+          accent: true,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Glyph(Icons.handyman_outlined),
+              const SizedBox(height: 12),
+              Text(
+                plan.title(context.language),
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                outcomeLabel(context, finished),
+                style: const TextStyle(color: ice),
+              ),
+              const SizedBox(height: 14),
+              LinearProgressIndicator(
+                value: count / steps.length,
+                semanticsLabel: context.t('Avance de pasos', 'Step progress'),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$count / ${steps.length} ${context.t('pasos completados', 'steps complete')}',
+                style: const TextStyle(color: softText),
+              ),
+            ],
+          ),
         ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
@@ -195,12 +213,17 @@ class _RepairPageState extends State<RepairPage> {
           ],
         ),
         for (var index = 0; index < steps.length; index++)
-          Card(
+          GlassCard(
+            accent: index == count && finished == null,
+            padding: EdgeInsets.zero,
             child: ListTile(
               leading: Icon(
                 index < count
                     ? Icons.check_circle
-                    : Icons.radio_button_unchecked,
+                    : (index == count
+                          ? Icons.play_circle_outline
+                          : Icons.radio_button_unchecked),
+                color: index <= count ? ice : softText,
               ),
               title: Text('${index + 1}. ${steps[index]}'),
             ),
@@ -225,14 +248,18 @@ class _RepairPageState extends State<RepairPage> {
             '${scanLabel(context, diagnostic['status'] as String)} · ${diagnostic['model']}',
           ),
           children: [
-            PhotoPanel(
-              photo: row['before_photo'] as Uint8List,
-              label: context.t('Antes', 'Before'),
-            ),
-            if (after != null) ...[
-              const SizedBox(height: 12),
-              PhotoPanel(photo: after, label: context.t('Después', 'After')),
-            ],
+            if (after == null)
+              PhotoPanel(
+                photo: row['before_photo'] as Uint8List,
+                label: context.t('Antes', 'Before'),
+              )
+            else
+              GlassCard(
+                child: PhotoComparison(
+                  before: row['before_photo'] as Uint8List,
+                  after: after,
+                ),
+              ),
           ],
         ),
         if (finished == null) ...[

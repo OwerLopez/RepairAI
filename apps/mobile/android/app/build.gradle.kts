@@ -52,6 +52,7 @@ android {
         release {
             // The debug signer permits local test builds before an upload key is provisioned.
             signingConfig = signingConfigs.getByName(if (signingFile.isFile) "upload" else "debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

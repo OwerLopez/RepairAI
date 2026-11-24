@@ -13,6 +13,7 @@ class Scan {
     this.elapsedMs, {
     this.box,
     this.score,
+    this.focus,
   });
 
   final Uint8List photo;
@@ -21,6 +22,7 @@ class Scan {
   final int elapsedMs;
   final Rect? box;
   final double? score;
+  final Offset? focus;
 
   Map<String, Object?> toJson() => {
     'status': status,
@@ -28,6 +30,7 @@ class Scan {
     'elapsedMs': elapsedMs,
     'score': score,
     'box': box == null ? null : [box!.left, box!.top, box!.right, box!.bottom],
+    if (focus != null) 'focus': [focus!.dx, focus!.dy],
   };
 }
 
@@ -49,7 +52,9 @@ class Vision {
   final List<int> starts;
   final double threshold;
 
-  Future<Scan> scan(Uint8List bytes) async {
+  static const focusSize = .20;
+
+  Future<Scan> scan(Uint8List bytes, {Offset? focus}) async {
     final timer = Stopwatch()..start();
     final frame = await compute(_prepareFrame, (
       bytes: bytes,
@@ -66,10 +71,24 @@ class Vision {
     try {
       double best = -double.infinity;
       Rect? box;
+      final search = focus == null
+          ? null
+          : Rect.fromCenter(center: focus, width: focusSize, height: focusSize);
       for (final y in starts) {
         for (final x in starts) {
-          final result = await _tile(session, frame.rgb!, x, y);
-          if (result.score > best) {
+          if (search != null &&
+              !search.overlaps(
+                Rect.fromLTWH(
+                  x / inputGrid,
+                  y / inputGrid,
+                  grid / inputGrid,
+                  grid / inputGrid,
+                ),
+              )) {
+            continue;
+          }
+          final result = await _tile(session, frame.rgb!, x, y, search);
+          if (result != null && result.score > best) {
             best = result.score;
             box = result.box;
           }
@@ -80,19 +99,21 @@ class Vision {
         best >= threshold ? 'candidate' : 'uncertain',
         version,
         timer.elapsedMilliseconds,
-        score: best,
+        score: best.isFinite ? best : null,
         box: best >= threshold ? box : null,
+        focus: focus,
       );
     } finally {
       await session.close();
     }
   }
 
-  Future<({double score, Rect box})> _tile(
+  Future<({double score, Rect box})?> _tile(
     OrtSession session,
     Uint8List rgb,
     int x,
     int y,
+    Rect? search,
   ) async {
     final area = grid * grid;
     final pixels = Float32List(area * 3);
@@ -110,12 +131,20 @@ class Vision {
     try {
       outputs.addAll(await session.run({'image': tensor}));
       final heat = (await outputs['heatmap']!.asFlattenedList()).cast<num>();
+      final cells = grid ~/ stride;
+      int? bestIndex;
+      for (var i = 0; i < heat.length; i++) {
+        final center = Offset(
+          (x + (i % cells + .5) * stride) / inputGrid,
+          (y + (i ~/ cells + .5) * stride) / inputGrid,
+        );
+        if (search != null && !search.contains(center)) continue;
+        if (bestIndex == null || heat[i] > heat[bestIndex]) bestIndex = i;
+      }
+      if (bestIndex == null) return null;
+      final index = bestIndex;
       final geometry = (await outputs['geometry']!.asFlattenedList())
           .cast<num>();
-      final cells = grid ~/ stride;
-      final index = Iterable<int>.generate(
-        heat.length,
-      ).reduce((a, b) => heat[a] >= heat[b] ? a : b);
       final centerX = (index % cells + geometry[index].clamp(0, 1)) / cells;
       final centerY =
           (index ~/ cells + geometry[heat.length + index].clamp(0, 1)) / cells;

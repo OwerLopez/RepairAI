@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'glass.dart';
 import 'journal.dart';
 import 'procedures.dart';
 import 'ui.dart';
@@ -10,34 +11,86 @@ class DiagnosisPage extends StatefulWidget {
     required this.scan,
     required this.journal,
     required this.knowledge,
+    required this.refine,
   });
 
   final Scan scan;
   final Journal journal;
   final Knowledge knowledge;
+  final Future<Scan> Function(Offset) refine;
 
   @override
   State<DiagnosisPage> createState() => _DiagnosisPageState();
 }
 
 class _DiagnosisPageState extends State<DiagnosisPage> {
+  late Scan scan = widget.scan;
   String? damage;
   String? material;
   bool machine = false;
   bool ordinary = false;
   bool saving = false;
+  bool refining = false;
+
+  Future<void> findAroundPoint() async {
+    final point = await Navigator.of(context).push<Offset>(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          appBar: AppBar(
+            title: Text(context.t('Señalar zona', 'Mark an area')),
+          ),
+          body: PageBody(
+            children: [
+              GlassCard(
+                child: Text(
+                  context.t(
+                    'Toca la tela cerca del daño. El modelo buscará alrededor de ese punto.',
+                    'Tap the fabric near the damage. The model will search around that point.',
+                  ),
+                ),
+              ),
+              PhotoPanel(
+                photo: scan.photo,
+                focus: scan.focus,
+                label: context.t(
+                  'Foto para señalar el daño',
+                  'Photo for marking damage',
+                ),
+                height: 435,
+                onChoose: (point) => Navigator.of(context).pop(point),
+              ),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(context.t('Cancelar', 'Cancel')),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!mounted || point == null) return;
+    setState(() => refining = true);
+    try {
+      final updated = await widget.refine(point);
+      if (mounted) setState(() => scan = updated);
+    } catch (_) {
+      if (mounted) context.error();
+    } finally {
+      if (mounted) setState(() => refining = false);
+    }
+  }
 
   Future<void> start(Procedure procedure) async {
-    if (saving) return;
+    if (saving || refining) return;
     setState(() => saving = true);
     try {
       final id = await widget.journal.start(
-        diagnosis: widget.scan.toJson(),
+        diagnosis: scan.toJson(),
         damage: damage!,
         material: material!,
         knowledge: widget.knowledge.version,
         plan: procedure.data,
-        photo: widget.scan.photo,
+        photo: scan.photo,
       );
       if (mounted) Navigator.of(context).pop(id);
     } catch (_) {
@@ -49,7 +102,6 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
 
   @override
   Widget build(BuildContext context) {
-    final scan = widget.scan;
     final usable = scan.status == 'candidate' || scan.status == 'uncertain';
     final hasContext =
         ordinary && damage != null && material != null && damage != 'other';
@@ -67,35 +119,90 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
           PhotoPanel(
             photo: scan.photo,
             box: scan.box,
+            focus: scan.focus,
             label: scanLabel(context, scan.status),
           ),
-          Text(
-            scanLabel(context, scan.status),
-            style: Theme.of(context).textTheme.headlineSmall,
+          GlassCard(
+            accent: scan.status == 'candidate',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Glyph(Icons.filter_center_focus_rounded, size: 36),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        scanLabel(context, scan.status),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  scan.status == 'candidate'
+                      ? context.t(
+                          'Revisa la zona marcada. Confirma el daño mirando la prenda y el tejido en la etiqueta.',
+                          'Inspect the marked area. Confirm the damage on the garment and check the fabric label.',
+                        )
+                      : usable
+                      ? context.t(
+                          'Puedes señalar una zona para acotar la búsqueda o identificar el daño manualmente.',
+                          'Mark an area to narrow the search or identify the damage manually.',
+                        )
+                      : context.t(
+                          'Vuelve a tomar una foto nítida con iluminación uniforme.',
+                          'Retake a sharp photo with even lighting.',
+                        ),
+                  style: const TextStyle(color: softText),
+                ),
+                if (scan.score != null)
+                  ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    title: Text(
+                      context.t('Detalles del análisis', 'Analysis details'),
+                    ),
+                    children: [
+                      ListTile(
+                        title: Text(
+                          context.t(
+                            'Puntaje sin calibrar ${scan.score!.toStringAsFixed(2)}',
+                            'Uncalibrated score ${scan.score!.toStringAsFixed(2)}',
+                          ),
+                        ),
+                        subtitle: Text(scan.model),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
-          if (scan.score != null)
-            Text(
-              context.t(
-                'Puntaje del modelo ${scan.score!.toStringAsFixed(2)} · sin calibrar',
-                'Model score ${scan.score!.toStringAsFixed(2)} · uncalibrated',
+          if (usable)
+            OutlinedButton.icon(
+              onPressed: saving || refining ? null : findAroundPoint,
+              icon: const Icon(Icons.touch_app_outlined),
+              label: Text(context.t('Señalar zona', 'Mark an area')),
+            ),
+          if (scan.focus != null)
+            TextButton(
+              onPressed: saving || refining
+                  ? null
+                  : () => setState(() => scan = widget.scan),
+              child: Text(
+                context.t(
+                  'Volver al análisis completo',
+                  'Return to full-image analysis',
+                ),
               ),
             ),
-          Text(
-            scan.status == 'candidate'
-                ? context.t(
-                    'La caja marca una zona candidata. Confirma visualmente el daño y consulta la etiqueta de la prenda.',
-                    'The box marks a candidate region. Confirm the damage visually and check the garment label.',
-                  )
-                : usable
-                ? context.t(
-                    'La foto no aporta evidencia suficiente para localizar un agujero. Puedes identificar el daño manualmente.',
-                    'The photo gives insufficient evidence to locate a hole. You can identify the damage manually.',
-                  )
-                : context.t(
-                    'Vuelve a tomar una foto nítida con iluminación uniforme.',
-                    'Retake a sharp photo with even lighting.',
-                  ),
-          ),
+          if (refining)
+            LinearProgressIndicator(
+              semanticsLabel: context.t(
+                'Buscando en la zona señalada',
+                'Searching the marked area',
+              ),
+            ),
           if (!usable)
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -216,27 +323,24 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             for (final plan in plans)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        plan.title(context.language),
-                        style: Theme.of(context).textTheme.titleMedium,
+              GlassCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      plan.title(context.language),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(plan.tools(context.language)),
+                    SourceLink(plan: plan),
+                    FilledButton(
+                      onPressed: saving || refining ? null : () => start(plan),
+                      child: Text(
+                        context.t('Iniciar reparación', 'Start repair'),
                       ),
-                      const SizedBox(height: 4),
-                      Text(plan.tools(context.language)),
-                      SourceLink(plan: plan),
-                      FilledButton(
-                        onPressed: saving ? null : () => start(plan),
-                        child: Text(
-                          context.t('Iniciar reparación', 'Start repair'),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
           ],

@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
 class Journal {
   Journal() : _database = _open();
@@ -10,8 +12,11 @@ class Journal {
   final Future<Database> _database;
 
   static Future<Database> _open() async {
+    if (kIsWeb) databaseFactory = databaseFactoryFfiWeb;
     return openDatabase(
-      path.join(await getDatabasesPath(), 'repairs.sqlite'),
+      kIsWeb
+          ? 'repairs.sqlite'
+          : path.join(await getDatabasesPath(), 'repairs.sqlite'),
       version: 1,
       onCreate: (db, _) async {
         await db.execute('''
