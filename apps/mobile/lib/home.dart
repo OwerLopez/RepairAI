@@ -7,13 +7,19 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'diagnosis_page.dart';
 import 'glass.dart';
+import 'impact_widget.dart';
 import 'journal.dart';
+import 'l10n/strings.dart';
 import 'procedures.dart';
 import 'repair_page.dart';
+import 'services/image_service.dart';
+import 'settings_page.dart';
 import 'ui.dart';
 import 'vision.dart';
 
+/// Primary root screen providing camera capture, repair history, and application settings.
 class Home extends StatefulWidget {
+  /// Creates the primary [Home] view.
   const Home({
     super.key,
     required this.journal,
@@ -22,9 +28,16 @@ class Home extends StatefulWidget {
     required this.changeLocale,
   });
 
+  /// The SQLite persistence journal for repair sessions and preferences.
   final Journal journal;
+
+  /// Neural vision inference engine.
   final Vision vision;
+
+  /// Repair procedure catalog knowledge base.
   final Knowledge knowledge;
+
+  /// Callback to change the active locale ('es' or 'en').
   final Future<void> Function(String) changeLocale;
 
   @override
@@ -34,7 +47,7 @@ class Home extends StatefulWidget {
 class _HomeState extends State<Home> {
   final picker = ImagePicker();
   bool busy = false;
-  bool history = false;
+  int tabIndex = 0;
   late Future<List<Map<String, Object?>>> sessions = widget.journal.list();
 
   @override
@@ -43,6 +56,7 @@ class _HomeState extends State<Home> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _recover());
   }
 
+  /// Prompts the user to pick an image from [source] with platform-appropriate quality settings.
   Future<XFile?> choose(ImageSource source) => picker.pickImage(
     source: source,
     imageQuality: defaultTargetPlatform == TargetPlatform.iOS ? 96 : null,
@@ -81,38 +95,29 @@ class _HomeState extends State<Home> {
   Future<void> _capture(ImageSource source) async {
     if (busy) return;
     setState(() => busy = true);
+    final lang = context.language;
     try {
-      await widget.journal.setPreference('pendingCapture', 'scan');
+      if (!kIsWeb) {
+        await widget.journal.setPreference('pendingCapture', 'scan');
+      }
       final file = await choose(source);
-      await widget.journal.setPreference('pendingCapture', null);
+      if (!kIsWeb) {
+        await widget.journal.setPreference('pendingCapture', null);
+      }
       if (file != null) await _diagnose(file);
     } on PlatformException catch (error) {
       if (!mounted) return;
       if (error.code.contains('access') || error.code.contains('permission')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t(
-                'Revisa los permisos de cámara o fotos en los ajustes del teléfono.',
-                'Check camera or photo access in your phone settings.',
-              ),
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(Strings.permissionError(lang))));
       } else {
         context.error();
       }
     } on FormatException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              context.t(
-                'Elige una imagen JPEG o PNG de hasta 28 MB y 32 megapíxeles.',
-                'Choose a JPEG or PNG image up to 28 MB and 32 megapixels.',
-              ),
-            ),
-          ),
+          SnackBar(content: Text(Strings.imageSizeFormatError(lang))),
         );
       }
     } catch (_) {
@@ -123,9 +128,7 @@ class _HomeState extends State<Home> {
   }
 
   Future<void> _diagnose(XFile photo) async {
-    if (await photo.length() > 28 * 1024 * 1024) {
-      throw const FormatException('Image size');
-    }
+    await ImageService.validateFile(photo);
     final bytes = await photo.readAsBytes();
     final scan = await widget.vision.scan(bytes);
     if (!mounted) return;
@@ -152,8 +155,17 @@ class _HomeState extends State<Home> {
     if (mounted) setState(() => sessions = widget.journal.list());
   }
 
+  Future<void> _refreshHistory() async {
+    setState(() {
+      sessions = widget.journal.list();
+    });
+    await sessions;
+  }
+
   @override
   Widget build(BuildContext context) {
+    final lang = context.language;
+
     return Scaffold(
       appBar: AppBar(
         title: const Row(
@@ -169,7 +181,7 @@ class _HomeState extends State<Home> {
         ),
         actions: [
           IconButton(
-            tooltip: context.t('Switch to English', 'Cambiar a español'),
+            tooltip: Strings.switchLanguageTooltip(lang),
             icon: const Icon(Icons.language_outlined),
             onPressed: () async {
               try {
@@ -182,214 +194,244 @@ class _HomeState extends State<Home> {
         ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: history ? 1 : 0,
+        selectedIndex: tabIndex,
         onDestinationSelected: busy
             ? null
-            : (index) => setState(() => history = index == 1),
+            : (index) => setState(() => tabIndex = index),
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.center_focus_weak),
-            label: context.t('Escáner', 'Scanner'),
+            label: Strings.scannerTitle(lang),
           ),
           NavigationDestination(
             icon: const Icon(Icons.history),
-            label: context.t('Historial', 'History'),
+            label: Strings.historyTitle(lang),
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            label: Strings.settingsTitle(lang),
           ),
         ],
       ),
-      body: history ? _history(context) : _scanner(context),
+      body: switch (tabIndex) {
+        0 => _scanner(context),
+        1 => _history(context),
+        _ => SettingsPage(
+          journal: widget.journal,
+          changeLocale: widget.changeLocale,
+          onDataCleared: () {
+            setState(() => sessions = widget.journal.list());
+          },
+        ),
+      },
     );
   }
 
-  Widget _scanner(BuildContext context) => PageBody(
-    children: [
-      GlassCard(
-        accent: true,
-        padding: const EdgeInsets.all(23),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Glyph(Icons.document_scanner_outlined, size: 55),
-                const Spacer(),
-                Icon(Icons.phonelink_lock_rounded, size: 17, color: ice),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    context.t('Funciona sin conexión', 'Works offline'),
-                    style: const TextStyle(
-                      color: ice,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 22),
-            Text(
-              context.t('Repara una prenda', 'Repair a garment'),
-              style: const TextStyle(
-                color: frost,
-                fontSize: 36,
-                height: 1.06,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -1.6,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              context.t(
-                'Examina el daño con una foto y sigue una guía compatible con tu prenda.',
-                'Inspect the damage with a photo and follow a guide that fits your garment.',
-              ),
-              style: const TextStyle(
-                color: softText,
-                fontSize: 16,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-      FilledButton.icon(
-        key: const ValueKey('camera'),
-        onPressed: busy ? null : () => _capture(ImageSource.camera),
-        icon: const Icon(Icons.photo_camera_outlined),
-        label: Text(context.t('Tomar fotografía', 'Take a photo')),
-      ),
-      OutlinedButton.icon(
-        key: const ValueKey('gallery'),
-        onPressed: busy ? null : () => _capture(ImageSource.gallery),
-        icon: const Icon(Icons.photo_library_outlined),
-        label: Text(context.t('Elegir de la galería', 'Choose from gallery')),
-      ),
-      if (busy) ...[
-        const LinearProgressIndicator(),
-        Text(
-          context.t('Procesando la fotografía…', 'Processing the photo…'),
-          textAlign: TextAlign.center,
-        ),
-      ],
-      GlassCard(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Glyph(Icons.light_mode_outlined, size: 36),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _scanner(BuildContext context) {
+    final lang = context.language;
+    return PageBody(
+      children: [
+        GlassCard(
+          accent: true,
+          padding: const EdgeInsets.all(23),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    context.t('Prepara la foto', 'Set up your photo'),
-                    style: Theme.of(context).textTheme.titleMedium,
+                  const Glyph(Icons.document_scanner_outlined, size: 55),
+                  const Spacer(),
+                  const Icon(
+                    Icons.phonelink_lock_rounded,
+                    size: 17,
+                    color: ice,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.t(
-                      'Extiende la prenda y acércate al daño con luz uniforme.',
-                      'Lay the garment flat and frame the damage closely in even light.',
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      Strings.worksOffline(lang),
+                      style: const TextStyle(
+                        color: ice,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    style: const TextStyle(color: softText),
                   ),
                 ],
               ),
-            ),
-          ],
-        ),
-      ),
-      if (kIsWeb)
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          children: [
-            TextButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse(
-                  'https://github.com/OwerLopez/RepairAI/releases/latest/download/ReparaAI-android-arm64.apk',
+              const SizedBox(height: 22),
+              Text(
+                Strings.repairGarment(lang),
+                style: const TextStyle(
+                  color: frost,
+                  fontSize: 36,
+                  height: 1.06,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -1.6,
                 ),
               ),
-              label: Text(context.t('Descargar APK', 'Download APK')),
-              icon: const Icon(Icons.download_outlined),
-            ),
-            TextButton.icon(
-              onPressed: () => launchUrl(
-                Uri.parse(
-                  'https://github.com/OwerLopez/RepairAI/blob/main/research/paper/dist/reparaai-ieee-es.pdf',
-                ),
-              ),
-              label: Text(context.t('Artículo IEEE', 'IEEE paper')),
-              icon: const Icon(Icons.description_outlined),
-            ),
-          ],
-        ),
-    ],
-  );
-
-  Widget _history(BuildContext context) => FutureBuilder(
-    future: sessions,
-    builder: (context, snapshot) => PageBody(
-      children: [
-        GlassCard(
-          child: Row(
-            children: [
-              const Glyph(Icons.history_rounded),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  context.t('Tus reparaciones', 'Your repairs'),
-                  style: Theme.of(context).textTheme.headlineSmall,
+              const SizedBox(height: 14),
+              Text(
+                Strings.inspectDamageDesc(lang),
+                style: const TextStyle(
+                  color: softText,
+                  fontSize: 16,
+                  height: 1.4,
                 ),
               ),
             ],
           ),
         ),
-        if (snapshot.hasError)
-          OutlinedButton(
-            onPressed: () => setState(() => sessions = widget.journal.list()),
-            child: Text(
-              context.t(
-                'Reintentar cargar el historial',
-                'Retry loading history',
-              ),
-            ),
-          )
-        else if (!snapshot.hasData)
-          const LinearProgressIndicator()
-        else if (snapshot.data!.isEmpty)
-          GlassCard(
-            child: Text(
-              context.t(
-                'Las reparaciones que inicies aparecerán aquí.',
-                'Repairs will appear here once you start them.',
-              ),
-            ),
-          )
-        else
-          for (final row in snapshot.data!)
-            GlassCard(
-              padding: EdgeInsets.zero,
-              child: ListTile(
-                leading: Glyph(
-                  row['outcome'] == 'repaired'
-                      ? Icons.check_circle_outline
-                      : Icons.layers_outlined,
-                  size: 36,
+        FilledButton.icon(
+          key: const ValueKey('camera'),
+          onPressed: busy ? null : () => _capture(ImageSource.camera),
+          icon: const Icon(Icons.photo_camera_outlined),
+          label: Text(Strings.takePhoto(lang)),
+        ),
+        OutlinedButton.icon(
+          key: const ValueKey('gallery'),
+          onPressed: busy ? null : () => _capture(ImageSource.gallery),
+          icon: const Icon(Icons.photo_library_outlined),
+          label: Text(Strings.chooseFromGallery(lang)),
+        ),
+        if (busy) ...[
+          const LinearProgressIndicator(),
+          Text(Strings.processingPhoto(lang), textAlign: TextAlign.center),
+        ],
+        GlassCard(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Glyph(Icons.light_mode_outlined, size: 36),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      Strings.setupPhotoTitle(lang),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      Strings.setupPhotoDesc(lang),
+                      style: const TextStyle(color: softText),
+                    ),
+                  ],
                 ),
-                title: Text(
-                  Procedure(
-                    jsonDecode(row['plan'] as String) as Map<String, dynamic>,
-                  ).title(context.language),
-                ),
-                subtitle: Text(
-                  '${outcomeLabel(context, row['outcome'] as String?)} · ${DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(DateTime.parse(row['started'] as String).toLocal())}',
-                ),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => _open(row['id'] as int),
               ),
-            ),
+            ],
+          ),
+        ),
+        if (kIsWeb)
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 10,
+            children: [
+              TextButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/OwerLopez/RepairAI/releases/latest/download/ReparaAI-android-arm64.apk',
+                  ),
+                ),
+                label: Text(Strings.downloadApk(lang)),
+                icon: const Icon(Icons.download_outlined),
+              ),
+              TextButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(
+                    'https://github.com/OwerLopez/RepairAI/blob/main/research/paper/dist/reparaai-ieee-es.pdf',
+                  ),
+                ),
+                label: Text(Strings.ieeePaper(lang)),
+                icon: const Icon(Icons.description_outlined),
+              ),
+            ],
+          ),
       ],
-    ),
-  );
+    );
+  }
+
+  Widget _history(BuildContext context) {
+    final lang = context.language;
+    return FutureBuilder<List<Map<String, Object?>>>(
+      future: sessions,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return RefreshIndicator(
+            onRefresh: _refreshHistory,
+            child: PageBody(
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                OutlinedButton(
+                  onPressed: () =>
+                      setState(() => sessions = widget.journal.list()),
+                  child: Text(Strings.retryLoadingHistory(lang)),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final list = snapshot.data!;
+        final completedRepairs = list
+            .where((row) => row['outcome'] == 'repaired')
+            .length;
+
+        return RefreshIndicator(
+          onRefresh: _refreshHistory,
+          child: PageBody(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              if (completedRepairs > 0)
+                ImpactWidget(completedRepairs: completedRepairs),
+              GlassCard(
+                child: Row(
+                  children: [
+                    const Glyph(Icons.history_rounded),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        Strings.yourRepairs(lang),
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (list.isEmpty)
+                GlassCard(child: Text(Strings.emptyHistory(lang)))
+              else
+                for (final row in list)
+                  GlassCard(
+                    padding: EdgeInsets.zero,
+                    child: ListTile(
+                      leading: Glyph(
+                        row['outcome'] == 'repaired'
+                            ? Icons.check_circle_outline
+                            : Icons.layers_outlined,
+                        size: 36,
+                      ),
+                      title: Text(
+                        Procedure(
+                          jsonDecode(row['plan'] as String)
+                              as Map<String, dynamic>,
+                        ).title(context.language),
+                      ),
+                      subtitle: Text(
+                        '${outcomeLabel(context, row['outcome'] as String?)} · ${DateFormat.yMMMd(Localizations.localeOf(context).languageCode).format(DateTime.parse(row['started'] as String).toLocal())}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => _open(row['id'] as int),
+                    ),
+                  ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

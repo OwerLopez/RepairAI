@@ -1,9 +1,53 @@
+# ReparaAI Root .gitignore
+
+# Python & Virtual Environments
 /.venv/
 /.data/
 /output/
 **/__pycache__/
+*.py[cod]
+*$py.class
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Flutter / Dart Generated Files
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub/
+.pub-cache/
+/build/
+**/build/
+/coverage/
+
+# Local Databases and Storage
+*.sqlite
+*.sqlite-journal
+*.db
+
+# LaTeX Build Artifacts
 *.aux
 *.bbl
 *.blg
 *.log
 *.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk

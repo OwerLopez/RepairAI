@@ -2,27 +2,33 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'glass.dart';
+import 'l10n/strings.dart';
 import 'procedures.dart';
 
+/// Extension on [BuildContext] for convenient localization and feedback.
 extension Copy on BuildContext {
+  /// Language index: `0` for Spanish (`es`), `1` for English (`en`).
   int get language => Localizations.localeOf(this).languageCode == 'es' ? 0 : 1;
+
+  /// Returns [es] when language is Spanish, or [en] otherwise.
   String t(String es, String en) => language == 0 ? es : en;
 
-  void error() => ScaffoldMessenger.of(this).showSnackBar(
-    SnackBar(
-      content: Text(
-        t(
-          'No se pudo completar la acción. Inténtalo de nuevo.',
-          'Could not complete the action. Try again.',
-        ),
-      ),
-    ),
-  );
+  /// Shows a transient error snackbar with standard retry messaging.
+  void error() => ScaffoldMessenger.of(
+    this,
+  ).showSnackBar(SnackBar(content: Text(Strings.actionError(language))));
 }
 
+/// Standard responsive container constraining content width with standard padding.
 class PageBody extends StatelessWidget {
-  const PageBody({super.key, required this.children});
+  /// Creates a responsive [PageBody] with standard vertical item spacing.
+  const PageBody({super.key, required this.children, this.physics});
+
+  /// The list of child widgets arranged in the scrollable body.
   final List<Widget> children;
+
+  /// Optional scroll physics for the internal [ListView].
+  final ScrollPhysics? physics;
 
   @override
   Widget build(BuildContext context) => SafeArea(
@@ -30,6 +36,7 @@ class PageBody extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 620),
         child: ListView(
+          physics: physics,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           children: [
             for (final child in children)
@@ -41,37 +48,32 @@ class PageBody extends StatelessWidget {
   );
 }
 
-String scanLabel(BuildContext context, String status) => switch (status) {
-  'candidate' => context.t(
-    'Posible agujero · experimental',
-    'Possible hole · experimental',
-  ),
-  'resolution' => context.t(
-    'Resolución insuficiente',
-    'Insufficient resolution',
-  ),
-  'lighting' => context.t(
-    'Iluminación insuficiente o excesiva',
-    'Image too dark or too bright',
-  ),
-  'focus' => context.t(
-    'Falta de detalle o enfoque',
-    'Insufficient detail or focus',
-  ),
-  _ => context.t('El modelo se abstuvo', 'The model abstained'),
-};
+/// Localized human-readable label for a vision scan [status].
+String scanLabel(BuildContext context, String status) {
+  final lang = context.language;
+  return switch (status) {
+    'candidate' => Strings.scanLabelCandidate(lang),
+    'resolution' => Strings.scanLabelResolution(lang),
+    'lighting' => Strings.scanLabelLighting(lang),
+    'focus' => Strings.scanLabelFocus(lang),
+    _ => Strings.scanLabelAbstained(lang),
+  };
+}
 
-String outcomeLabel(BuildContext context, String? outcome) => switch (outcome) {
-  'repaired' => context.t(
-    'Reparado según el usuario',
-    'Repaired, self-reported',
-  ),
-  'partial' => context.t('Resultado parcial', 'Partial result'),
-  'stopped' => context.t('Interrumpida', 'Stopped'),
-  _ => context.t('En progreso', 'In progress'),
-};
+/// Localized human-readable label for a repair [outcome].
+String outcomeLabel(BuildContext context, String? outcome) {
+  final lang = context.language;
+  return switch (outcome) {
+    'repaired' => Strings.outcomeRepaired(lang),
+    'partial' => Strings.outcomePartial(lang),
+    'stopped' => Strings.outcomeStopped(lang),
+    _ => Strings.outcomeInProgress(lang),
+  };
+}
 
+/// Panel widget rendering an image with optional bounding box and focus crosshair overlays.
 class PhotoPanel extends StatelessWidget {
+  /// Creates a [PhotoPanel] displaying [photo] with optional target overlays.
   const PhotoPanel({
     super.key,
     required this.photo,
@@ -81,11 +83,23 @@ class PhotoPanel extends StatelessWidget {
     this.onChoose,
     this.height = 310,
   });
+
+  /// The JPEG encoded image bytes.
   final Uint8List photo;
+
+  /// Accessibility semantic label describing the photo.
   final String label;
+
+  /// Normalized bounding box coordinates `[left, top, right, bottom]` in [0, 1].
   final Rect? box;
+
+  /// Normalized focus center coordinates `(dx, dy)` in [0, 1].
   final Offset? focus;
+
+  /// Callback triggered when the user taps on the image to select a focus point.
   final ValueChanged<Offset>? onChoose;
+
+  /// Fixed display height of the photo panel.
   final double height;
 
   @override
@@ -173,8 +187,12 @@ class _BoxPainter extends CustomPainter {
       oldDelegate.box != box || oldDelegate.focus != focus;
 }
 
+/// Action link button launching the original published procedure URL in an external browser.
 class SourceLink extends StatelessWidget {
+  /// Creates a [SourceLink] for the given [plan].
   const SourceLink({super.key, required this.plan});
+
+  /// The procedure containing the source attribution and link.
   final Procedure plan;
 
   @override
@@ -194,9 +212,15 @@ class SourceLink extends StatelessWidget {
   );
 }
 
+/// Interactive before and after photo comparison slider.
 class PhotoComparison extends StatefulWidget {
+  /// Creates an interactive [PhotoComparison] view comparing [before] and [after] photos.
   const PhotoComparison({super.key, required this.before, required this.after});
+
+  /// Pre-repair image bytes.
   final Uint8List before;
+
+  /// Post-repair outcome image bytes.
   final Uint8List after;
 
   @override
@@ -207,84 +231,85 @@ class _PhotoComparisonState extends State<PhotoComparison> {
   double position = .5;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text(
-        context.t('Comparar antes y después', 'Compare before and after'),
-        style: Theme.of(context).textTheme.titleMedium,
-      ),
-      const SizedBox(height: 10),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: SizedBox(
-          height: 252,
-          child: LayoutBuilder(
-            builder: (context, bounds) {
-              Widget photo(Uint8List bytes, String label) => Image.memory(
-                bytes,
-                width: bounds.maxWidth,
-                height: 252,
-                fit: BoxFit.contain,
-                semanticLabel: label,
-              );
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  const ColoredBox(color: midnight),
-                  photo(widget.after, context.t('Después', 'After')),
-                  ClipRect(
-                    clipper: _ComparisonClip(position),
-                    child: ColoredBox(
-                      color: midnight,
-                      child: photo(widget.before, context.t('Antes', 'Before')),
-                    ),
-                  ),
-                  if (position > 0 && position < 1)
-                    Positioned(
-                      left: bounds.maxWidth * position - 1,
-                      top: 0,
-                      bottom: 0,
-                      child: const ColoredBox(
-                        color: ice,
-                        child: SizedBox(width: 2),
+  Widget build(BuildContext context) {
+    final lang = context.language;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          Strings.compareBeforeAndAfter(lang),
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 10),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: SizedBox(
+            height: 252,
+            child: LayoutBuilder(
+              builder: (context, bounds) {
+                Widget photo(Uint8List bytes, String label) => Image.memory(
+                  bytes,
+                  width: bounds.maxWidth,
+                  height: 252,
+                  fit: BoxFit.contain,
+                  semanticLabel: label,
+                );
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    const ColoredBox(color: midnight),
+                    photo(widget.after, Strings.afterPhotoLabel(lang)),
+                    ClipRect(
+                      clipper: _ComparisonClip(position),
+                      child: ColoredBox(
+                        color: midnight,
+                        child: photo(
+                          widget.before,
+                          Strings.beforePhotoLabel(lang),
+                        ),
                       ),
                     ),
-                ],
-              );
-            },
+                    if (position > 0 && position < 1)
+                      Positioned(
+                        left: bounds.maxWidth * position - 1,
+                        top: 0,
+                        bottom: 0,
+                        child: const ColoredBox(
+                          color: ice,
+                          child: SizedBox(width: 2),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
-      Semantics(
-        label: context.t(
-          'Control de comparación de fotos',
-          'Photo comparison control',
+        Semantics(
+          label: Strings.photoComparisonControl(lang),
+          child: Slider(
+            value: position,
+            semanticFormatterCallback: (value) =>
+                Strings.photoComparisonPercent(lang, (value * 100).round()),
+            onChanged: (value) => setState(() => position = value),
+          ),
         ),
-        child: Slider(
-          value: position,
-          semanticFormatterCallback: (value) => context.t(
-            '${(value * 100).round()} por ciento de la foto anterior',
-            '${(value * 100).round()} percent of the before photo',
-          ),
-          onChanged: (value) => setState(() => position = value),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: () => setState(() => position = 1),
+              child: Text(Strings.beforePhotoLabel(lang)),
+            ),
+            TextButton(
+              onPressed: () => setState(() => position = 0),
+              child: Text(Strings.afterPhotoLabel(lang)),
+            ),
+          ],
         ),
-      ),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          TextButton(
-            onPressed: () => setState(() => position = 1),
-            child: Text(context.t('Antes', 'Before')),
-          ),
-          TextButton(
-            onPressed: () => setState(() => position = 0),
-            child: Text(context.t('Después', 'After')),
-          ),
-        ],
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _ComparisonClip extends CustomClipper<Rect> {

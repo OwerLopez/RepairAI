@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'glass.dart';
 import 'journal.dart';
+import 'l10n/strings.dart';
 import 'procedures.dart';
 import 'ui.dart';
 import 'vision.dart';
 
+/// Screen presenting vision diagnosis, candidate bounding boxes, and compatible repairs.
 class DiagnosisPage extends StatefulWidget {
+  /// Creates the [DiagnosisPage].
   const DiagnosisPage({
     super.key,
     required this.scan,
@@ -14,9 +17,16 @@ class DiagnosisPage extends StatefulWidget {
     required this.refine,
   });
 
+  /// The vision inference scan result.
   final Scan scan;
+
+  /// The database journal instance.
   final Journal journal;
+
+  /// The loaded repair procedure catalog.
   final Knowledge knowledge;
+
+  /// Callback to re-run neural inference around a user-specified focus point.
   final Future<Scan> Function(Offset) refine;
 
   @override
@@ -32,36 +42,26 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
   bool saving = false;
   bool refining = false;
 
+  /// Opens a full-screen view allowing the user to tap and narrow down the defect region.
   Future<void> findAroundPoint() async {
+    final lang = context.language;
     final point = await Navigator.of(context).push<Offset>(
       MaterialPageRoute(
         builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: Text(context.t('Señalar zona', 'Mark an area')),
-          ),
+          appBar: AppBar(title: Text(Strings.markArea(lang))),
           body: PageBody(
             children: [
-              GlassCard(
-                child: Text(
-                  context.t(
-                    'Toca la tela cerca del daño. El modelo buscará alrededor de ese punto.',
-                    'Tap the fabric near the damage. The model will search around that point.',
-                  ),
-                ),
-              ),
+              GlassCard(child: Text(Strings.markAreaInstruction(lang))),
               PhotoPanel(
                 photo: scan.photo,
                 focus: scan.focus,
-                label: context.t(
-                  'Foto para señalar el daño',
-                  'Photo for marking damage',
-                ),
+                label: Strings.photoForMarkingDamage(lang),
                 height: 435,
                 onChoose: (point) => Navigator.of(context).pop(point),
               ),
               OutlinedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.t('Cancelar', 'Cancel')),
+                child: Text(Strings.cancel(lang)),
               ),
             ],
           ),
@@ -80,6 +80,7 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
     }
   }
 
+  /// Initiates a repair session for [procedure] and persists it into the journal.
   Future<void> start(Procedure procedure) async {
     if (saving || refining) return;
     setState(() => saving = true);
@@ -102,6 +103,7 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
 
   @override
   Widget build(BuildContext context) {
+    final lang = context.language;
     final usable = scan.status == 'candidate' || scan.status == 'uncertain';
     final hasContext =
         ordinary && damage != null && material != null && damage != 'other';
@@ -113,7 +115,7 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
           )
         : <Procedure>[];
     return Scaffold(
-      appBar: AppBar(title: Text(context.t('Diagnóstico', 'Diagnosis'))),
+      appBar: AppBar(title: Text(Strings.diagnosisTitle(lang))),
       body: PageBody(
         children: [
           PhotoPanel(
@@ -142,33 +144,22 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
                 const SizedBox(height: 10),
                 Text(
                   scan.status == 'candidate'
-                      ? context.t(
-                          'Revisa la zona marcada. Confirma el daño mirando la prenda y el tejido en la etiqueta.',
-                          'Inspect the marked area. Confirm the damage on the garment and check the fabric label.',
-                        )
+                      ? Strings.candidateHint(lang)
                       : usable
-                      ? context.t(
-                          'Puedes señalar una zona para acotar la búsqueda o identificar el daño manualmente.',
-                          'Mark an area to narrow the search or identify the damage manually.',
-                        )
-                      : context.t(
-                          'Vuelve a tomar una foto nítida con iluminación uniforme.',
-                          'Retake a sharp photo with even lighting.',
-                        ),
+                      ? Strings.uncertainHint(lang)
+                      : Strings.rejectedHint(lang),
                   style: const TextStyle(color: softText),
                 ),
                 if (scan.score != null)
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
-                    title: Text(
-                      context.t('Detalles del análisis', 'Analysis details'),
-                    ),
+                    title: Text(Strings.analysisDetails(lang)),
                     children: [
                       ListTile(
                         title: Text(
-                          context.t(
-                            'Puntaje sin calibrar ${scan.score!.toStringAsFixed(2)}',
-                            'Uncalibrated score ${scan.score!.toStringAsFixed(2)}',
+                          Strings.uncalibratedScore(
+                            lang,
+                            scan.score!.toStringAsFixed(2),
                           ),
                         ),
                         subtitle: Text(scan.model),
@@ -182,66 +173,51 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
             OutlinedButton.icon(
               onPressed: saving || refining ? null : findAroundPoint,
               icon: const Icon(Icons.touch_app_outlined),
-              label: Text(context.t('Señalar zona', 'Mark an area')),
+              label: Text(Strings.markArea(lang)),
             ),
           if (scan.focus != null)
             TextButton(
               onPressed: saving || refining
                   ? null
                   : () => setState(() => scan = widget.scan),
-              child: Text(
-                context.t(
-                  'Volver al análisis completo',
-                  'Return to full-image analysis',
-                ),
-              ),
+              child: Text(Strings.returnToFullAnalysis(lang)),
             ),
           if (refining)
             LinearProgressIndicator(
-              semanticsLabel: context.t(
-                'Buscando en la zona señalada',
-                'Searching the marked area',
-              ),
+              semanticsLabel: Strings.searchingMarkedArea(lang),
             ),
           if (!usable)
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(context.t('Volver al escáner', 'Return to scanner')),
+              child: Text(Strings.returnToScanner(lang)),
             )
           else ...[
             const Divider(),
             Text(
-              context.t(
-                'Confirma el daño y la tela',
-                'Confirm the damage and fabric',
-              ),
+              Strings.confirmDamageAndFabric(lang),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             DropdownButtonFormField<String>(
               key: const ValueKey('damage'),
               decoration: InputDecoration(
-                labelText: context.t('Daño observado', 'Observed damage'),
+                labelText: Strings.observedDamage(lang),
               ),
               items: [
                 DropdownMenuItem(
                   value: 'hole',
-                  child: Text(context.t('Agujero', 'Hole')),
+                  child: Text(Strings.damageHole(lang)),
                 ),
                 DropdownMenuItem(
                   value: 'tear',
-                  child: Text(context.t('Desgarro', 'Tear')),
+                  child: Text(Strings.damageTear(lang)),
                 ),
                 DropdownMenuItem(
                   value: 'seam',
-                  child: Text(
-                    context.t('Costura recta abierta', 'Open straight seam'),
-                  ),
+                  child: Text(Strings.damageSeam(lang)),
                 ),
                 DropdownMenuItem(
                   value: 'other',
-                  child: Text(
-                    context.t('Otro o sin confirmar', 'Other or unconfirmed'),
-                  ),
+                  child: Text(Strings.damageOther(lang)),
                 ),
               ],
               onChanged: saving
@@ -251,27 +227,20 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
             DropdownButtonFormField<String>(
               key: const ValueKey('material'),
               decoration: InputDecoration(
-                labelText: context.t('Tela confirmada', 'Confirmed fabric'),
+                labelText: Strings.confirmedFabric(lang),
               ),
               items: [
                 DropdownMenuItem(
                   value: 'denim',
-                  child: Text(context.t('Denim', 'Denim')),
+                  child: Text(Strings.fabricDenim(lang)),
                 ),
                 DropdownMenuItem(
                   value: 'woven',
-                  child: Text(
-                    context.t(
-                      'Tejido plano no elástico',
-                      'Non-stretch woven fabric',
-                    ),
-                  ),
+                  child: Text(Strings.fabricWoven(lang)),
                 ),
                 DropdownMenuItem(
                   value: 'unknown',
-                  child: Text(
-                    context.t('Otra o desconocida', 'Other or unknown'),
-                  ),
+                  child: Text(Strings.fabricUnknown(lang)),
                 ),
               ],
               onChanged: saving
@@ -280,9 +249,7 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(
-                context.t('Tengo máquina de coser', 'I have a sewing machine'),
-              ),
+              title: Text(Strings.haveSewingMachine(lang)),
               value: machine,
               onChanged: saving
                   ? null
@@ -290,36 +257,18 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
             ),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text(
-                context.t(
-                  'Es una prenda de uso cotidiano',
-                  'This is an everyday garment',
-                ),
-              ),
-              subtitle: Text(
-                context.t(
-                  'Excluye prendas de protección y equipo técnico.',
-                  'Exclude protective garments and technical equipment.',
-                ),
-              ),
+              title: Text(Strings.everydayGarment(lang)),
+              subtitle: Text(Strings.everydayGarmentDesc(lang)),
               value: ordinary,
               onChanged: saving
                   ? null
                   : (value) => setState(() => ordinary = value ?? false),
             ),
             if (ordinary && damage != null && material != null && plans.isEmpty)
-              Text(
-                context.t(
-                  'No hay un procedimiento compatible con estos datos.',
-                  'There is no compatible procedure for this information.',
-                ),
-              ),
+              Text(Strings.noCompatibleProcedures(lang)),
             if (plans.isNotEmpty)
               Text(
-                context.t(
-                  'Procedimientos compatibles',
-                  'Compatible procedures',
-                ),
+                Strings.compatibleProcedures(lang),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             for (final plan in plans)
@@ -336,9 +285,7 @@ class _DiagnosisPageState extends State<DiagnosisPage> {
                     SourceLink(plan: plan),
                     FilledButton(
                       onPressed: saving || refining ? null : () => start(plan),
-                      child: Text(
-                        context.t('Iniciar reparación', 'Start repair'),
-                      ),
+                      child: Text(Strings.startRepair(lang)),
                     ),
                   ],
                 ),

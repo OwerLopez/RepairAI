@@ -4,19 +4,29 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'glass.dart';
 import 'journal.dart';
+import 'l10n/strings.dart';
 import 'procedures.dart';
+import 'services/image_service.dart';
 import 'ui.dart';
 import 'vision.dart';
 
+/// Screen presenting step-by-step repair guidance, evidence logging, and final outcome recording.
 class RepairPage extends StatefulWidget {
+  /// Creates the [RepairPage].
   const RepairPage({
     super.key,
     required this.id,
     required this.journal,
     required this.choose,
   });
+
+  /// The unique identifier of this repair session in the database.
   final int id;
+
+  /// The database journal instance.
   final Journal journal;
+
+  /// Callback to capture or select an image file from [ImageSource].
   final Future<XFile?> Function(ImageSource) choose;
 
   @override
@@ -57,6 +67,7 @@ class _RepairPageState extends State<RepairPage> {
   }
 
   Future<void> _after() async {
+    final lang = context.language;
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       builder: (context) => SafeArea(
@@ -64,14 +75,12 @@ class _RepairPageState extends State<RepairPage> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: Text(context.t('Tomar fotografía', 'Take a photo')),
+              title: Text(Strings.takePhoto(lang)),
               onTap: () => Navigator.of(context).pop(ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: Text(
-                context.t('Elegir de la galería', 'Choose from gallery'),
-              ),
+              title: Text(Strings.chooseFromGallery(lang)),
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
           ],
@@ -87,33 +96,27 @@ class _RepairPageState extends State<RepairPage> {
       final photo = await widget.choose(source);
       await widget.journal.setPreference('pendingCapture', null);
       if (photo == null) return;
-      if (await photo.length() > 28 * 1024 * 1024) {
-        throw const FormatException('Image size');
-      }
+      await ImageService.validateFile(photo);
       final bytes = await Vision.preparePhoto(await photo.readAsBytes());
       await widget.journal.evidence(widget.id, bytes);
     });
   }
 
   Future<void> _delete() async {
+    final lang = context.language;
     final approved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(context.t('¿Eliminar reparación?', 'Delete this repair?')),
-        content: Text(
-          context.t(
-            'Se eliminarán también sus fotos y notas.',
-            'Its photos and notes will also be deleted.',
-          ),
-        ),
+        title: Text(Strings.deleteRepairDialogTitle(lang)),
+        content: Text(Strings.deleteRepairDialogContent(lang)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(context.t('Cancelar', 'Cancel')),
+            child: Text(Strings.cancel(lang)),
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: Text(context.t('Eliminar', 'Delete')),
+            child: Text(Strings.delete(lang)),
           ),
         ],
       ),
@@ -124,33 +127,35 @@ class _RepairPageState extends State<RepairPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text(context.t('Reparación guiada', 'Guided repair')),
-    ),
-    body: FutureBuilder(
-      future: session,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return PageBody(
-            children: [
-              OutlinedButton(
-                onPressed: () =>
-                    setState(() => session = widget.journal.read(widget.id)),
-                child: Text(context.t('Reintentar', 'Try again')),
-              ),
-            ],
-          );
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        return _details(context, snapshot.data!);
-      },
-    ),
-  );
+  Widget build(BuildContext context) {
+    final lang = context.language;
+    return Scaffold(
+      appBar: AppBar(title: Text(Strings.guidedRepairTitle(lang))),
+      body: FutureBuilder(
+        future: session,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return PageBody(
+              children: [
+                OutlinedButton(
+                  onPressed: () =>
+                      setState(() => session = widget.journal.read(widget.id)),
+                  child: Text(Strings.tryAgain(lang)),
+                ),
+              ],
+            );
+          }
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return _details(context, snapshot.data!);
+        },
+      ),
+    );
+  }
 
   Widget _details(BuildContext context, Map<String, Object?> row) {
+    final lang = context.language;
     final plan = Procedure(
       jsonDecode(row['plan'] as String) as Map<String, dynamic>,
     );
@@ -180,12 +185,12 @@ class _RepairPageState extends State<RepairPage> {
               ),
               const SizedBox(height: 14),
               LinearProgressIndicator(
-                value: count / steps.length,
-                semanticsLabel: context.t('Avance de pasos', 'Step progress'),
+                value: steps.isEmpty ? 0 : count / steps.length,
+                semanticsLabel: Strings.stepProgress(lang),
               ),
               const SizedBox(height: 8),
               Text(
-                '$count / ${steps.length} ${context.t('pasos completados', 'steps complete')}',
+                Strings.stepsComplete(lang, count, steps.length),
                 style: const TextStyle(color: softText),
               ),
             ],
@@ -193,22 +198,10 @@ class _RepairPageState extends State<RepairPage> {
         ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
-          title: Text(
-            context.t(
-              'Materiales, precauciones y fuente',
-              'Tools, precautions and source',
-            ),
-          ),
+          title: Text(Strings.toolsPrecautionsSource(lang)),
           children: [
             ListTile(title: Text(plan.tools(context.language))),
-            ListTile(
-              title: Text(
-                context.t(
-                  'Retira alfileres al terminar y revisa que no hayas cosido otra capa.',
-                  'Remove pins when finished and check that no other garment layer was stitched.',
-                ),
-              ),
-            ),
+            ListTile(title: Text(Strings.safetyPrecaution(lang))),
             SourceLink(plan: plan),
           ],
         ),
@@ -233,17 +226,12 @@ class _RepairPageState extends State<RepairPage> {
             onPressed: busy
                 ? null
                 : () => _save(() => widget.journal.advance(widget.id, count)),
-            label: Text(
-              context.t(
-                'Completar paso ${count + 1}',
-                'Complete step ${count + 1}',
-              ),
-            ),
+            label: Text(Strings.completeStep(lang, count + 1)),
             icon: const Icon(Icons.check),
           ),
         ExpansionTile(
           tilePadding: EdgeInsets.zero,
-          title: Text(context.t('Diagnóstico y fotos', 'Diagnosis and photos')),
+          title: Text(Strings.diagnosisAndPhotos(lang)),
           subtitle: Text(
             '${scanLabel(context, diagnostic['status'] as String)} · ${diagnostic['model']}',
           ),
@@ -251,7 +239,7 @@ class _RepairPageState extends State<RepairPage> {
             if (after == null)
               PhotoPanel(
                 photo: row['before_photo'] as Uint8List,
-                label: context.t('Antes', 'Before'),
+                label: Strings.beforePhotoLabel(lang),
               )
             else
               GlassCard(
@@ -268,21 +256,18 @@ class _RepairPageState extends State<RepairPage> {
             icon: const Icon(Icons.add_a_photo_outlined),
             label: Text(
               after == null
-                  ? context.t('Añadir foto del resultado', 'Add outcome photo')
-                  : context.t(
-                      'Cambiar foto del resultado',
-                      'Replace outcome photo',
-                    ),
+                  ? Strings.addOutcomePhoto(lang)
+                  : Strings.replaceOutcomePhoto(lang),
             ),
           ),
           Text(
-            context.t('Registra el resultado', 'Record the outcome'),
+            Strings.recordOutcome(lang),
             style: Theme.of(context).textTheme.titleLarge,
           ),
           DropdownButtonFormField<String>(
             initialValue: outcome,
             decoration: InputDecoration(
-              labelText: context.t('Resultado observado', 'Observed outcome'),
+              labelText: Strings.observedOutcome(lang),
             ),
             items: [
               for (final value in ['repaired', 'partial', 'stopped'])
@@ -299,9 +284,7 @@ class _RepairPageState extends State<RepairPage> {
             controller: notes,
             enabled: !busy,
             maxLength: 500,
-            decoration: InputDecoration(
-              labelText: context.t('Notas opcionales', 'Optional notes'),
-            ),
+            decoration: InputDecoration(labelText: Strings.optionalNotes(lang)),
           ),
           FilledButton(
             onPressed: busy || (outcome == 'repaired' && count < steps.length)
@@ -309,14 +292,14 @@ class _RepairPageState extends State<RepairPage> {
                 : () => _save(
                     () => widget.journal.finish(widget.id, outcome, notes.text),
                   ),
-            child: Text(context.t('Guardar resultado', 'Save outcome')),
+            child: Text(Strings.saveOutcome(lang)),
           ),
         ] else if ((row['notes'] as String).isNotEmpty)
           Text(row['notes'] as String),
         TextButton.icon(
           onPressed: busy ? null : _delete,
           icon: const Icon(Icons.delete_outline),
-          label: Text(context.t('Eliminar reparación', 'Delete repair')),
+          label: Text(Strings.deleteRepair(lang)),
         ),
       ],
     );

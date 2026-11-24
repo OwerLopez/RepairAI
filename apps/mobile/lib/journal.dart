@@ -6,7 +6,9 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
+/// SQLite persistence manager for repair sessions and user preferences.
 class Journal {
+  /// Creates a new [Journal] instance with an active SQLite database connection.
   Journal() : _database = _open();
 
   final Future<Database> _database;
@@ -43,6 +45,7 @@ class Journal {
     );
   }
 
+  /// Inserts a new repair session into the journal and returns its assigned integer [id].
   Future<int> start({
     required Map<String, Object?> diagnosis,
     required String damage,
@@ -62,6 +65,7 @@ class Journal {
     });
   }
 
+  /// Lists all logged repair sessions ordered by most recent first.
   Future<List<Map<String, Object?>>> list() async {
     return (await _database).query(
       'sessions',
@@ -70,6 +74,7 @@ class Journal {
     );
   }
 
+  /// Reads a single repair session by its unique integer [id].
   Future<Map<String, Object?>> read(int id) async {
     final rows = await (await _database).query(
       'sessions',
@@ -80,6 +85,7 @@ class Journal {
     return rows.single;
   }
 
+  /// Increments the progress of session [id] from [step] to the next step.
   Future<void> advance(int id, int step) async {
     await (await _database).update(
       'sessions',
@@ -89,6 +95,7 @@ class Journal {
     );
   }
 
+  /// Updates session [id] with the post-repair outcome evidence [photo].
   Future<void> evidence(int id, Uint8List photo) async {
     await (await _database).update(
       'sessions',
@@ -98,6 +105,7 @@ class Journal {
     );
   }
 
+  /// Records final completion [outcome] and user [notes] for session [id].
   Future<void> finish(int id, String outcome, String notes) async {
     await (await _database).update(
       'sessions',
@@ -111,6 +119,7 @@ class Journal {
     );
   }
 
+  /// Deletes a specific repair session [id] from the database.
   Future<void> delete(int id) async {
     await (await _database).delete(
       'sessions',
@@ -119,6 +128,14 @@ class Journal {
     );
   }
 
+  /// Purges all repair sessions and user preferences from the database.
+  Future<void> deleteAll() async {
+    final db = await _database;
+    await db.delete('sessions');
+    await db.delete('preferences');
+  }
+
+  /// Retrieves a saved user preference by [key], returning null if not found.
   Future<String?> preference(String key) async {
     final rows = await (await _database).query(
       'preferences',
@@ -129,6 +146,7 @@ class Journal {
     return rows.isEmpty ? null : rows.single['value'] as String;
   }
 
+  /// Stores or clears a user preference [value] for [key].
   Future<void> setPreference(String key, String? value) async {
     final db = await _database;
     if (value == null) {

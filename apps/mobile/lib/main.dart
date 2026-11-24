@@ -8,6 +8,7 @@ import 'journal.dart';
 import 'procedures.dart';
 import 'vision.dart';
 
+/// Entry point initializing persistence, loading embedded model assets, and launching the application.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final journal = Journal();
@@ -26,7 +27,9 @@ Future<void> main() async {
   );
 }
 
+/// Root application widget configuring dark theme, glassmorphic styling, and supported locales.
 class ReparaApp extends StatefulWidget {
+  /// Creates the root [ReparaApp].
   const ReparaApp({
     super.key,
     required this.journal,
@@ -35,9 +38,16 @@ class ReparaApp extends StatefulWidget {
     this.language,
   });
 
+  /// The SQLite persistence journal.
   final Journal journal;
+
+  /// Neural vision inference engine.
   final Vision vision;
+
+  /// Bundled repair procedures knowledge base.
   final Knowledge knowledge;
+
+  /// Initial language code ('es' or 'en') restored from user preferences, if set.
   final String? language;
 
   @override

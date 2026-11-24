@@ -2,16 +2,30 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+/// Deep midnight background color for contrast layers.
 const midnight = Color(0xff06111f);
+
+/// Dark navy surface color for sheets and container surfaces.
 const deepBlue = Color(0xff10263b);
+
+/// Light text and primary foreground color.
 const frost = Color(0xffeff7ff);
+
+/// Vibrant cyan/ice accent color for highlights and active controls.
 const ice = Color(0xff8af1e3);
+
+/// Muted text color for secondary labels and metadata.
 const softText = Color(0xffbdcedf);
+
+/// Semi-transparent border tint for glassmorphic containers.
 const glassBorder = Color(0x5484b4d2);
 
+/// Full-screen ambient backdrop providing an aurora-styled frosted atmosphere.
 class GlassBackdrop extends StatelessWidget {
+  /// Creates an ambient [GlassBackdrop] wrapping [child].
   const GlassBackdrop({super.key, required this.child});
 
+  /// The widget content rendered above the backdrop.
   final Widget child;
 
   @override
@@ -96,7 +110,9 @@ class _Aurora extends CustomPainter {
   bool shouldRepaint(_Aurora oldDelegate) => false;
 }
 
+/// Frosted translucent card widget with blurred background and optional accent tint.
 class GlassCard extends StatelessWidget {
+  /// Creates a frosted [GlassCard] container.
   const GlassCard({
     super.key,
     required this.child,
@@ -104,8 +120,13 @@ class GlassCard extends StatelessWidget {
     this.accent = false,
   });
 
+  /// The child widget displayed inside the card.
   final Widget child;
+
+  /// Internal padding for the card content.
   final EdgeInsetsGeometry padding;
+
+  /// Whether to use the highlighted accent border and gradient.
   final bool accent;
 
   @override
@@ -136,10 +157,15 @@ class GlassCard extends StatelessWidget {
   }
 }
 
+/// Decorative rounded icon container with subtle glow and gradient border.
 class Glyph extends StatelessWidget {
+  /// Creates a decorative [Glyph] container showing [icon].
   const Glyph(this.icon, {super.key, this.size = 42});
 
+  /// The material icon displayed in the glyph.
   final IconData icon;
+
+  /// The width and height of the glyph box.
   final double size;
 
   @override

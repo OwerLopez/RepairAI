@@ -1,3 +1,6 @@
+[![Pilot validation](https://github.com/OwerLopez/RepairAI/actions/workflows/pilot.yml/badge.svg)](https://github.com/OwerLopez/RepairAI/actions/workflows/pilot.yml)
+[![Flutter 3.38.3](https://img.shields.io/badge/Flutter-3.38.3-02569B?logo=flutter&logoColor=white)](https://flutter.dev/)
+
 # ReparaAI
 
 Aplicación Android para analizar una fotografía de una prenda, consultar una guía de reparación con fuente y guardar el progreso y el resultado sin conexión. La interfaz inicia en español y permite cambiar a inglés. El trabajo de investigación **UCRA** evalúa localización visual de agujeros y el efecto de la abstención.
@@ -90,3 +93,15 @@ La evaluación conserva una sola variante de mayor resolución por vista y asign
 ## English
 
 ReparaAI is a bilingual offline Android app for screening garment photos, finding source-linked repair instructions, and keeping a repair journal. Use the globe button to switch to English. The hole detector is experimental and the repair plan relies on the user confirming the damage and fabric. The [English manuscript source](research/paper/main.tex) and [reproduction instructions](research/experiments/) describe the benchmark.
+
+## Contributing
+
+Contributions to ReparaAI are welcome! Please read our [Contribution Guidelines](docs/CONTRIBUTING.md) for details on prerequisites, local environment setup, code style, testing protocols, and the pull request process.
+
+## License
+
+This project's license is currently under development / proprietary pending publication. See [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) and dataset notices for attribution and research usage terms.
+
+## Changelog
+
+For a detailed history of changes and releases, see [CHANGELOG.md](CHANGELOG.md).

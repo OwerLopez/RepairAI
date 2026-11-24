@@ -1,5 +1,17 @@
 # Historial de implementación
 
+## 24 de noviembre de 2026
+
+| Hito | Cambio y verificación |
+| --- | --- |
+| Arquitectura y modelos | Creación de capa de datos desacoplada en `lib/models/` (`RepairSession`, `Scan`, jerarquía de excepciones `AppError`) y capa de servicios en `lib/services/` (`ImageService` para validación y decodificación; `ImpactService` para métricas de sostenibilidad). |
+| Ajustes y administración | Implementación de `SettingsPage` (Módulo 11 parcial): selector de idioma en tiempo de ejecución, créditos de autoría, declaratoria de privacidad local-first y borrado completo de base de datos (`deleteAll`) con confirmación modal. |
+| Impacto ambiental | Implementación de `ImpactWidget` (Módulo 10 parcial): visualización reactiva de prendas rescatadas, kg de CO₂ evitados y litros de agua ahorrados calculados a partir de las reparaciones registradas en SQLite. |
+| Internacionalización (i18n) | Centralización de recursos lingüísticos bilingües en `lib/l10n/strings.dart` (`Strings`), organizando textos por pantalla y eliminando cadenas dispersas. |
+| Suite de pruebas integral | Expansión de pruebas unitarias de 4 a 24 tests aprobados (`glass_test.dart`, `journal_test.dart`, `procedures_test.dart`, `ui_helpers_test.dart`, `vision_test.dart`), validando el ciclo SQLite completo, ranking de procedimientos, heurísticas de calidad y renderizado de componentes. |
+| Documentación y gobernanza | Creación de documentación integral del repositorio: `docs/ARCHITECTURE.md`, `docs/API.md`, `docs/CONTRIBUTING.md`, `CHANGELOG.md` (formato Keep a Changelog) y plantillas en `.github/ISSUE_TEMPLATE/`. |
+| Validación y `.gitignore` | Actualización de reglas `.gitignore` a nivel raíz y en `apps/mobile/` para cubrir archivos generados (Dart/Flutter, IDEs, Python, SQLite, LaTeX). Verificación integral: `dart format lib test` limpio, `flutter analyze --no-pub` con 0 incidencias y `flutter test --no-pub` con 24/24 pruebas superadas. |
+
 ## 23 de noviembre de 2026
 
 | Hito | Cambio y verificación |

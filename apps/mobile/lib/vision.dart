@@ -4,39 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:image/image.dart' as image;
+import 'models/scan_result.dart';
+import 'services/image_service.dart';
 
-class Scan {
-  const Scan(
-    this.photo,
-    this.status,
-    this.model,
-    this.elapsedMs, {
-    this.box,
-    this.score,
-    this.focus,
-  });
-
-  final Uint8List photo;
-  final String status;
-  final String model;
-  final int elapsedMs;
-  final Rect? box;
-  final double? score;
-  final Offset? focus;
-
-  Map<String, Object?> toJson() => {
-    'status': status,
-    'model': model,
-    'elapsedMs': elapsedMs,
-    'score': score,
-    'box': box == null ? null : [box!.left, box!.top, box!.right, box!.bottom],
-    if (focus != null) 'focus': [focus!.dx, focus!.dy],
-  };
-}
+export 'models/scan_result.dart';
 
 typedef _Frame = ({Uint8List photo, String? rejected, Uint8List? rgb});
 
+/// On-device neural vision screening engine for textile damage detection.
 class Vision {
+  /// Initializes the vision engine with metadata from the loaded ONNX [model] dictionary.
   Vision(Map<String, dynamic> model)
     : version = model['version'] as String,
       grid = model['grid'] as int,
@@ -45,15 +22,28 @@ class Vision {
       starts = (model['tile_starts'] as List).cast<int>(),
       threshold = (model['threshold'] as num).toDouble();
 
+  /// Model version identifier.
   final String version;
+
+  /// Convolutional tile dimension in pixels.
   final int grid;
+
+  /// Stride between detection cells in the output feature map.
   final int stride;
+
+  /// Full input image grid dimension expected by the tile coordinate system.
   final int inputGrid;
+
+  /// Starting grid pixel offsets for tiled inference evaluation.
   final List<int> starts;
+
+  /// Sigmoid confidence threshold for candidate detection.
   final double threshold;
 
+  /// Normalized bounding size of the user search focus window (.20 = 20%).
   static const focusSize = .20;
 
+  /// Performs inference on raw image [bytes], optionally constrained to a user [focus] point.
   Future<Scan> scan(Uint8List bytes, {Offset? focus}) async {
     final timer = Stopwatch()..start();
     final frame = await compute(_prepareFrame, (
@@ -66,7 +56,7 @@ class Vision {
     }
     final session = await OnnxRuntime().createSessionFromAsset(
       'assets/hole_tile.onnx',
-      options: OrtSessionOptions(intraOpNumThreads: 2),
+      options: OrtSessionOptions(intraOpNumThreads: kIsWeb ? 1 : 2),
     );
     try {
       double best = -double.infinity;
@@ -171,6 +161,7 @@ class Vision {
     }
   }
 
+  /// Normalizes and prepares raw image [bytes] into a compressed JPEG for persistent storage and display.
   static Future<Uint8List> preparePhoto(Uint8List bytes) =>
       compute((data) => _displayPhoto(_decode(data)), bytes);
 }
@@ -227,19 +218,7 @@ _Frame _prepareFrame(({Uint8List bytes, int grid, int inputGrid}) input) {
 }
 
 image.Image _decode(Uint8List data) {
-  if (data.isEmpty || data.length > 28 * 1024 * 1024) {
-    throw const FormatException('Image size');
-  }
-  final decoder = image.findDecoderForData(data);
-  final info = decoder?.startDecode(data);
-  if (info == null || info.width * info.height > 32000000) {
-    throw const FormatException('Image format or dimensions');
-  }
-  final decoded = decoder!.decodeFrame(0);
-  if (decoded == null) throw const FormatException('Image data');
-  return image
-      .bakeOrientation(decoded)
-      .convert(format: image.Format.uint8, numChannels: 3);
+  return ImageService.decodeAndValidate(data);
 }
 
 Uint8List _displayPhoto(image.Image original) {
