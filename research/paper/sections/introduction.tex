@@ -1,0 +1,13 @@
+\section{Introduction}
+
+The decision to mend a garment starts with identifying the visible damage and determining whether a repair method fits the textile, location, and tools. In a handheld photograph, folds and prints can resemble damage. Fiber composition and fabric strength may require a label, touch, or inspection. An assistant should be able to withhold a visual hypothesis and preserve the distinction between a proposed region, a user's observation, and a reported repair outcome.
+
+We ask whether selective garment-hole localization and explicit confirmation of repair context can support an evidence-grounded Android workflow. The pilot tests two engineering hypotheses. First, a center-heatmap detector may localize a greater fraction of held-out positive views than a fixed-window baseline. Second, score-based abstention may lower localization error at the cost of showing results on fewer views. The compatibility and usability of the downstream repair workflow require separate human evaluation.
+
+\section{Related work}
+
+DeepFashion2 benchmarks clothing categories, landmarks, masks, and view matching in consumer and commercial images \cite{ge2019}. The second-hand clothing data deposited by RISE and collaborators add item-level condition attributes \cite{nauman}. The garment-hole export from CISUTAC and Warg\"on Innovation directly supplies spatial annotations on post-consumer garments \cite{cisutac}. FabricSpotDefect provides spatial supervision for a distinct cue, spots on fabric \cite{fabricspot}. These sources motivate separate benchmarks for garment context and visible damage because their acquisition conditions and label definitions differ.
+
+Center-based localization predicts a center location and box geometry \cite{zhou2019}. Selective classification formalizes the trade-off between coverage and error among emitted predictions \cite{geifman2017}. Model scores can be poorly calibrated as probabilities of correctness \cite{guo2017}. UCRA therefore treats image quality, a model score, and contextual confirmation as distinct observations. Retrieval-augmented generation conditions language generation on retrieved evidence \cite{lewis2020}. The present catalog is a deterministic extractive baseline in which plans point to their sources and contain curated steps.
+
+The study targets the handoff between visible damage and a traceable repair action. Its pilot contribution is a jointly instrumented workflow and a garment-grouped localization comparison with abstention. Whether the full approach improves repair outcomes over retrieval or repair guides alone is an open empirical question.

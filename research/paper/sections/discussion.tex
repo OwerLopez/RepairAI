@@ -1,0 +1,19 @@
+\section{Discussion}
+
+At the selected tiled operating point, ten of eighteen shown proposals missed the IoU 0.25 criterion. A high model score in this pilot has limited evidential value even when the image passes the quality check. The app therefore presents the candidate as experimental and asks for an explicit observation before it looks up a procedure. Independent reviewers must establish whether users can interpret the distinction correctly.
+
+The whole-image detector uses aggressive spatial reduction for computational efficiency. Small holes may occupy only a few input pixels, with some features attenuated further by the output stride. High-resolution tiles trade added computation and more opportunities for false positives for improved spatial representation. Results from either input strategy may also depend on the dataset provider's background processing. An external handheld set with appropriate negative controls is essential to distinguish these effects.
+
+\section{Limitations}
+
+The benchmark is a single-source, exploratory sample of garments with annotated holes. Image-level specificity, prevalence-sensitive calibration, robustness to natural mobile capture, and generalization to other defect classes remain unmeasured. The split relies on file naming as the physical identity proxy and can miss duplicates with unrelated identifiers. The detector returns one region per view, so the reported metric does not replace per-instance mean average precision. The local catalog covers a few everyday repairs and has not been reviewed by an independent textile expert panel. Repair quality, task completion by participants, device latency, memory, energy, and structural integrity remain open measurement questions.
+
+\section{Conclusion}
+
+UCRA links a visual experiment to a usable repair workflow and makes the origin of each recommendation inspectable. Grouped testing found low automatic hole localization for the initial models. The evidence supports further research on defect scale, negative controls, and user verification. A larger handheld set and independent repair-plan assessment are required before drawing reliability or repair-outcome conclusions.
+
+\section*{Reproducibility and author statements}
+
+The pinned source manifest, grouped split code, training and evaluation commands, test outputs and mobile code are maintained in the \href{https://github.com/OwerLopez/RepairAI}{ReparaAI repository}. The source export remains available from its publisher and the project credits CISUTAC and Warg\"on Innovation. The study analyzed a public dataset and ran a software smoke test. It did not recruit participants or use private production imagery.
+
+Author affiliations, correspondence, conflicts of interest, funding, and CRediT roles are pending confirmation by the authors. The submission checklist and the Spanish research summary accompany the manuscript.

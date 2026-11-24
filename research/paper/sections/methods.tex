@@ -1,0 +1,44 @@
+\section{Problem and method}
+
+Given an image $x$, the visual module emits at most one proposed box $\hat b$, class $\textit{hole}$, and ranking score $s$, or abstains. An image passes the quality gate if it meets the resolution, mean luminance, and Laplacian energy rules. A prediction is shown when the image passes and $s \geq \tau$. A repair plan is retrieved from the catalog after the user confirms the defect and fabric and provides tool availability. The session snapshots the observation, model version, source-linked procedure and progress. The result is user-reported.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tabular}{@{}p{.26\linewidth} p{.05\linewidth} p{.25\linewidth} p{.05\linewidth} p{.27\linewidth}@{}}
+    \textbf{Screen image} & $\to$ & \textbf{Confirm context} & $\to$ & \textbf{Guide and record} \\
+    \raggedright Quality gate, experimental candidate or abstention && \raggedright User observes damage, confirms fabric and tools && \raggedright Retrieve source, track steps, store before and after evidence
+  \end{tabular}
+  \caption{The workflow keeps a visual candidate, confirmed context, and a user-reported outcome separately in its data model.}
+  \label{fig:workflow}
+\end{figure}
+
+\subsection{Data and annotation}
+
+We acquired the pinned Garment Condition Holes export under CC BY 4.0 \cite{cisutac}. It contains 761 image exports with paired labels and processed backgrounds. Files sharing a garment and view prefix were deduplicated by retaining the largest raster. Polygon records were reduced to their enclosing rectangles. Normalized coordinates and pairing were checked programmatically. The grouped split used seed 104 and the garment identifier present in filenames. Retained source dimensions were 2160 by 3840 and 1920 by 1080 pixels. The pilot uses garment views with visible annotated holes. The acquisition protocol for a separate handheld dataset includes verified negatives, decorative distressing, uncertainty labels, multiple cameras, consent records, and independent annotation review.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Dataset after deduplication and reassignment by garment.}
+  \begin{tabular}{lrrr}
+    \toprule
+    Partition & Garments & Views & Hole annotations \\
+    \midrule
+    Train & 284 & 285 & 571 \\
+    Validation & 61 & 61 & 115 \\
+    Test & 61 & 61 & 99 \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:data}
+\end{table}
+
+\subsection{Localization baselines and mobile implementation}
+
+The fixed-window models use a grayscale grid of $384 \times 384$ pixels and square windows of 8, 16, 32 and 64 pixels, with half-window stride. Integral-image descriptors represent luminance, gradients, local contrasts and scale. We assigned training targets using maximum intersection over union (IoU). Positive windows had IoU at least 0.25 and negative windows had IoU below 0.05. The retained training sample contained 998 positives and 27,448 negatives. The comparators were class-weighted logistic regression and a 32-tree random forest with maximum depth 10 and a minimum of 12 samples per leaf. Each selects its highest-scoring window.
+
+The neural comparator predicts a center heatmap at stride 4 and four geometry terms for center offsets and log width and height \cite{zhou2019}. A shallow detail stream is fused with a strided context stream. The training objective combines focal heatmap loss and smooth $L_1$ regression at annotated centers. Training used horizontal and vertical flips, luminance jitter and random crops. AdamW training ran for 24 epochs on an NVIDIA GeForce RTX 4060 Ti. Model selection used validation localization $F_{0.5}$. A tiled variant increases the input sampling grid to 1152 pixels per axis and evaluates sixteen overlapping $384 \times 384$ crops, retaining the best scoring box after mapping candidates to image coordinates. Both variants export the inference graph to ONNX.
+
+Android runs the tiled detector locally through ONNX Runtime. It decodes and orients the source image, applies the same grid sampling and threshold, and re-encodes a copy without EXIF for display and session storage. The English and Spanish catalog filters four techniques by observed damage, confirmed fabric, and machine availability. Narrower fabric applicability is ranked first among compatible procedures. Sources are linked for inspection. The local SQLite journal records the initial image, candidate metadata, selected plan, progress, optional outcome image, and reported outcome.
+
+\subsection{Evaluation}
+
+For each view containing at least one hole, the best box was judged correct if its maximum IoU with a labeled hole met a specified threshold. The primary descriptive threshold of 0.25 accommodates approximate proposals and the strict check at 0.50 reports tighter localizations. Coverage is the fraction of all views with a displayed candidate. Selective precision is the fraction of displayed candidates that meet the IoU criterion. Localized-positive fraction divides the number of successful views by all positive test views. We chose $\tau$ on validation to maximize $F_{0.5}$ using selective precision and localized-positive fraction. Ties were resolved in favor of greater score thresholds. The threshold does not estimate a calibrated probability. Garment-level percentile intervals use 1,000 bootstrap samples.

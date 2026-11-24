@@ -1,0 +1,28 @@
+{
+  "platform": "Android emulator",
+  "serial": "emulator-5554",
+  "mode": "airplane",
+  "languages_checked": [
+    "es",
+    "en"
+  ],
+  "fixture": "20260519_150854_06965077_front_nobg_png.rf.6e92a127fa2cb13493d36269e690f625.jpg",
+  "model": {
+    "status": "candidate",
+    "model": "hole-center-fda922fd14bb",
+    "elapsedMs": 4037,
+    "score": 0.4383134447524579,
+    "box": [
+      0.338532232467115,
+      0.5221973765563712,
+      0.36658454614502184,
+      0.5362686725618032
+    ]
+  },
+  "knowledge_version": "textile-guides-1",
+  "procedure": "woven-patch",
+  "completed_steps": 3,
+  "outcome": "repaired",
+  "before_bytes": 66659,
+  "after_bytes": 66659
+}

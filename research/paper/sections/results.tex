@@ -1,0 +1,18 @@
+\section{Results and ablation}
+
+\input{tables/localization}
+
+The held-out set is positive-only. Table~\ref{tab:results} shows that the forest and whole-view CNN each localized few images. The forest localized two displayed boxes at IoU $\geq 0.50$ and the whole-view CNN localized zero. The tiled variant localized seven at that threshold. At IoU $\geq 0.25$, it correctly localized 8 of 18 shown candidates with 29.5\% coverage. The precision interval for this operating point spans 21.4\% to 68.8\%.
+
+For the forest, score-based abstention reduced the number of displayed candidates from 61 to 53 and preserved the three matches at IoU $\geq 0.25$. The corresponding whole-view CNN threshold reduced the number from 61 to 40 and preserved two matches. For the tiled CNN, it reduced the number from 61 to 18, preserving 8 of 12 matches and increasing selective precision from 19.7\% to 44.4\%. The quality heuristic accepted every clean test export.
+
+Compared with the forest, tiling increased the localized-positive fraction by 8.2 percentage points (paired garment-bootstrap 95\% interval 0.0 to 16.4). The tiled model used more sampled pixels and a different training crop distribution. The difference cannot be attributed to resolution alone. This exploratory result merits replication on a new holdout.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=.77\linewidth]{figures/risk_coverage.pdf}
+  \caption{Exploratory held-out curves for all four detectors. Risk is one minus selective precision at IoU 0.25. Each step represents a score threshold and the figure uses the score rule alone.}
+  \label{fig:risk}
+\end{figure}
+
+The software smoke test is a separate integration check using a selected real CISUTAC photo. It tests Android photo selection, localization display, user confirmation, retrieval, persisted progress, and outcome recording. Selecting an example this way cannot estimate localization accuracy. The same image can be used as an attachment fixture to exercise evidence storage without implying that any physical repair occurred.

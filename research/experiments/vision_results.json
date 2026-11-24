@@ -1,0 +1,168 @@
+{
+  "dataset": {
+    "repo": "wargoninnovation/Garment_condition_holes",
+    "revision": "3b81cb807188690222ef2a6af9cbfd2271292a32",
+    "license": "CC BY 4.0",
+    "counts": {
+      "train/images": 697,
+      "train/labels": 697,
+      "valid/images": 64,
+      "valid/labels": 64
+    }
+  },
+  "exports": 761,
+  "upstream_groups_in_both_splits": 0,
+  "splits": {
+    "train": {
+      "views": 285,
+      "groups": 284,
+      "positive_views": 285,
+      "boxes": 571
+    },
+    "validation": {
+      "views": 61,
+      "groups": 61,
+      "positive_views": 61,
+      "boxes": 115
+    },
+    "test": {
+      "views": 61,
+      "groups": 61,
+      "positive_views": 61,
+      "boxes": 99
+    }
+  },
+  "original_sizes": [
+    [
+      1920,
+      1080
+    ],
+    [
+      2160,
+      3840
+    ]
+  ],
+  "training": {
+    "windows": 28446,
+    "positive_windows": 998
+  },
+  "model_version": "hole-rf-c58f66c30e59",
+  "thresholds": {
+    "logistic": 0.9750000000000001,
+    "forest": 0.9500000000000001
+  },
+  "validation": {
+    "logistic": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 58,
+      "correct_iou25": 1,
+      "correct_iou50": 0,
+      "coverage": 0.9508196721311475,
+      "precision_iou25": 0.017241379310344827,
+      "localized_positive_fraction": 0.01639344262295082
+    },
+    "forest": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 50,
+      "correct_iou25": 2,
+      "correct_iou50": 0,
+      "coverage": 0.819672131147541,
+      "precision_iou25": 0.04,
+      "localized_positive_fraction": 0.03278688524590164
+    }
+  },
+  "test": {
+    "logistic": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 59,
+      "correct_iou25": 1,
+      "correct_iou50": 0,
+      "coverage": 0.9672131147540983,
+      "precision_iou25": 0.01694915254237288,
+      "localized_positive_fraction": 0.01639344262295082,
+      "always_predict": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 61,
+        "correct_iou25": 1,
+        "correct_iou50": 0,
+        "coverage": 1.0,
+        "precision_iou25": 0.01639344262295082,
+        "localized_positive_fraction": 0.01639344262295082
+      },
+      "threshold_only": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 59,
+        "correct_iou25": 1,
+        "correct_iou50": 0,
+        "coverage": 0.9672131147540983,
+        "precision_iou25": 0.01694915254237288,
+        "localized_positive_fraction": 0.01639344262295082
+      },
+      "bootstrap_95": {
+        "coverage": [
+          0.9180327868852459,
+          1.0
+        ],
+        "precision_iou25": [
+          0.0,
+          0.05172413793103448
+        ],
+        "localized_positive_fraction": [
+          0.0,
+          0.04918032786885246
+        ]
+      },
+      "quality_rejected": 0
+    },
+    "forest": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 53,
+      "correct_iou25": 3,
+      "correct_iou50": 2,
+      "coverage": 0.8688524590163934,
+      "precision_iou25": 0.05660377358490566,
+      "localized_positive_fraction": 0.04918032786885246,
+      "always_predict": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 61,
+        "correct_iou25": 3,
+        "correct_iou50": 2,
+        "coverage": 1.0,
+        "precision_iou25": 0.04918032786885246,
+        "localized_positive_fraction": 0.04918032786885246
+      },
+      "threshold_only": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 53,
+        "correct_iou25": 3,
+        "correct_iou50": 2,
+        "coverage": 0.8688524590163934,
+        "precision_iou25": 0.05660377358490566,
+        "localized_positive_fraction": 0.04918032786885246
+      },
+      "bootstrap_95": {
+        "coverage": [
+          0.7704918032786885,
+          0.9508196721311475
+        ],
+        "precision_iou25": [
+          0.0,
+          0.125
+        ],
+        "localized_positive_fraction": [
+          0.0,
+          0.11475409836065574
+        ]
+      },
+      "quality_rejected": 0
+    }
+  }
+}

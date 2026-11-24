@@ -1,0 +1,183 @@
+{
+  "version": "hole-center-fda922fd14bb",
+  "sha256": "fda922fd14bb1f83e4fa269b3e9da208b20762da31b05d814ce733b40bf00164",
+  "grid": 384,
+  "stride": 4,
+  "threshold": 0.35000000000000003,
+  "input_grid": 1152,
+  "tile_starts": [
+    0,
+    256,
+    512,
+    768
+  ],
+  "source": {
+    "repo": "wargoninnovation/Garment_condition_holes",
+    "revision": "3b81cb807188690222ef2a6af9cbfd2271292a32",
+    "license": "CC BY 4.0",
+    "counts": {
+      "train/images": 697,
+      "train/labels": 697,
+      "valid/images": 64,
+      "valid/labels": 64
+    }
+  },
+  "epochs": 24,
+  "best_epoch": 24,
+  "batch_size": 24,
+  "device": "NVIDIA GeForce RTX 4060 Ti",
+  "parameters": 166085,
+  "bytes": 669318,
+  "validation": {
+    "views": 61,
+    "positive_views": 61,
+    "shown": 20,
+    "correct_iou25": 7,
+    "correct_iou50": 5,
+    "coverage": 0.32786885245901637,
+    "precision_iou25": 0.35,
+    "localized_positive_fraction": 0.11475409836065574
+  },
+  "test": {
+    "views": 61,
+    "positive_views": 61,
+    "shown": 18,
+    "correct_iou25": 8,
+    "correct_iou50": 7,
+    "coverage": 0.29508196721311475,
+    "precision_iou25": 0.4444444444444444,
+    "localized_positive_fraction": 0.13114754098360656,
+    "always_predict": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 61,
+      "correct_iou25": 12,
+      "correct_iou50": 8,
+      "coverage": 1.0,
+      "precision_iou25": 0.19672131147540983,
+      "localized_positive_fraction": 0.19672131147540983
+    },
+    "threshold_only": {
+      "views": 61,
+      "positive_views": 61,
+      "shown": 18,
+      "correct_iou25": 8,
+      "correct_iou50": 7,
+      "coverage": 0.29508196721311475,
+      "precision_iou25": 0.4444444444444444,
+      "localized_positive_fraction": 0.13114754098360656
+    },
+    "bootstrap_95": {
+      "coverage": [
+        0.18032786885245902,
+        0.4262295081967213
+      ],
+      "precision_iou25": [
+        0.21428571428571427,
+        0.6875
+      ],
+      "localized_positive_fraction": [
+        0.04918032786885246,
+        0.22950819672131148
+      ]
+    }
+  },
+  "history": [
+    {
+      "epoch": 4,
+      "loss": 3.7480181919203863,
+      "validation_f_half": 0.055762081784386616,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 52,
+        "correct_iou25": 3,
+        "correct_iou50": 1,
+        "coverage": 0.8524590163934426,
+        "precision_iou25": 0.057692307692307696,
+        "localized_positive_fraction": 0.04918032786885246
+      },
+      "threshold": 0.15000000000000002
+    },
+    {
+      "epoch": 8,
+      "loss": 3.312946445412106,
+      "validation_f_half": 0.0980392156862745,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 23,
+        "correct_iou25": 3,
+        "correct_iou50": 2,
+        "coverage": 0.3770491803278688,
+        "precision_iou25": 0.13043478260869565,
+        "localized_positive_fraction": 0.04918032786885246
+      },
+      "threshold": 0.25
+    },
+    {
+      "epoch": 12,
+      "loss": 3.0058233936627707,
+      "validation_f_half": 0.14950166112956811,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 60,
+        "correct_iou25": 9,
+        "correct_iou50": 4,
+        "coverage": 0.9836065573770492,
+        "precision_iou25": 0.15,
+        "localized_positive_fraction": 0.14754098360655737
+      },
+      "threshold": 0.2
+    },
+    {
+      "epoch": 16,
+      "loss": 2.801088896062639,
+      "validation_f_half": 0.15021459227467815,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 43,
+        "correct_iou25": 7,
+        "correct_iou50": 4,
+        "coverage": 0.7049180327868853,
+        "precision_iou25": 0.16279069767441862,
+        "localized_positive_fraction": 0.11475409836065574
+      },
+      "threshold": 0.275
+    },
+    {
+      "epoch": 20,
+      "loss": 2.690848410129547,
+      "validation_f_half": 0.196078431372549,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 23,
+        "correct_iou25": 6,
+        "correct_iou50": 3,
+        "coverage": 0.3770491803278688,
+        "precision_iou25": 0.2608695652173913,
+        "localized_positive_fraction": 0.09836065573770492
+      },
+      "threshold": 0.325
+    },
+    {
+      "epoch": 24,
+      "loss": 2.4679145514965057,
+      "validation_f_half": 0.24822695035460995,
+      "validation": {
+        "views": 61,
+        "positive_views": 61,
+        "shown": 20,
+        "correct_iou25": 7,
+        "correct_iou50": 5,
+        "coverage": 0.32786885245901637,
+        "precision_iou25": 0.35,
+        "localized_positive_fraction": 0.11475409836065574
+      },
+      "threshold": 0.35000000000000003
+    }
+  ]
+}
