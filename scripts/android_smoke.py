@@ -1,6 +1,7 @@
 """Drive a real-photo, offline repair flow on a dedicated Android emulator."""
 
 import argparse
+from contextlib import closing
 import json
 from pathlib import Path
 import re
@@ -23,16 +24,19 @@ class Android:
         self.xml = "/sdcard/reparaai-smoke.xml"
 
     def run(self, *args):
-        return subprocess.run(self.command + list(args), check=True, capture_output=True, timeout=45).stdout
+        return subprocess.run(self.command + list(args), check=True, capture_output=True, timeout=90).stdout
 
     def shell(self, *args):
         return self.run("shell", *map(str, args)).decode("utf-8")
 
     def nodes(self):
-        result = self.shell("uiautomator", "dump", self.xml)
-        if "dumped" not in result:
+        try:
+            result = self.shell("uiautomator", "dump", self.xml)
+            if "dumped" not in result:
+                return []
+            return ET.fromstring(self.run("exec-out", "cat", self.xml)).iter("node")
+        except (subprocess.CalledProcessError, ET.ParseError):
             return []
-        return ET.fromstring(self.run("exec-out", "cat", self.xml)).iter("node")
 
     def find(self, label, seconds=7):
         end = time.monotonic() + seconds
@@ -62,6 +66,11 @@ class Android:
         self.shell("am", "force-stop", PACKAGE)
         self.shell("am", "start", "-n", ACTIVITY)
 
+    def screenshot(self, directory, name):
+        if directory:
+            directory.mkdir(parents=True, exist_ok=True)
+            (directory / f"{name}.png").write_bytes(self.run("exec-out", "screencap", "-p"))
+
     def database(self):
         self.shell("am", "force-stop", PACKAGE)
         with tempfile.TemporaryDirectory() as temporary:
@@ -75,7 +84,7 @@ class Android:
                     continue
                 if blob and not blob.startswith(b"cat:"):
                     base.with_suffix(".sqlite" + suffix).write_bytes(blob)
-            with sqlite3.connect(base) as db:
+            with closing(sqlite3.connect(base)) as db:
                 return db.execute("""
                     SELECT diagnosis, plan, knowledge, completed_steps, outcome,
                            length(before_photo), length(after_photo)
@@ -96,38 +105,50 @@ def smoke(args):
     try:
         if not args.resume_diagnosis:
             device.restart()
-            device.tap("Choose from gallery")
+            device.expect("Tomar fotografía")
+            device.screenshot(args.screenshots, "01-escaner")
+            device.tap("Switch to English")
+            device.expect("Take a photo")
+            device.tap("Cambiar a español")
+            device.expect("Tomar fotografía")
+            device.tap("Elegir de la galería")
             device.tap("Photo taken on*")
-        device.expect("Possible hole*", seconds=55)
-        device.tap("Observed damage")
-        device.tap("Hole")
-        device.tap("Confirmed fabric")
-        device.tap("Non-stretch woven fabric")
-        device.tap("This is an everyday garment*", scroll=True)
-        device.tap("Start repair", scroll=True)
-        device.expect("Guided repair")
-        device.tap("Complete step 1", scroll=True)
+        device.expect("Posible agujero*", seconds=55)
+        device.screenshot(args.screenshots, "02-diagnostico")
+        device.tap("Daño observado", scroll=True)
+        device.tap("Agujero")
+        device.tap("Tela confirmada", scroll=True)
+        device.tap("Tejido plano no elástico")
+        device.tap("Es una prenda de uso cotidiano*", scroll=True)
+        device.tap("Iniciar reparación", scroll=True)
+        device.expect("Reparación guiada")
+        device.screenshot(args.screenshots, "03-reparacion")
+        device.tap("Completar paso 1", scroll=True)
         # Reopen a persisted session after terminating the process.
         device.restart()
-        device.tap("History*")
-        device.tap("Hand-sewn patch*")
-        device.expect("1 / 3 steps complete")
-        device.tap("Complete step 2", scroll=True)
-        device.tap("Complete step 3", scroll=True)
-        device.tap("Add outcome photo", scroll=True)
-        device.tap("Choose from gallery")
+        device.tap("Historial*")
+        device.tap("Parche cosido a mano*")
+        device.expect("1 / 3 pasos completados")
+        device.tap("Completar paso 2", scroll=True)
+        device.tap("Completar paso 3", scroll=True)
+        device.tap("Añadir foto del resultado", scroll=True)
+        device.tap("Elegir de la galería")
         device.tap("Photo taken on*")
-        device.expect("Replace outcome photo", seconds=40)
-        device.tap("Save outcome", scroll=True)
+        device.expect("Cambiar foto del resultado", seconds=40)
+        device.tap("Guardar resultado", scroll=True)
         device.restart()
-        device.tap("History*")
-        device.tap("Hand-sewn patch*")
-        device.expect("3 / 3 steps complete")
+        device.tap("Historial*")
+        device.expect("Tus reparaciones")
+        device.expect("Parche cosido a mano*")
+        device.screenshot(args.screenshots, "04-historial")
+        device.tap("Parche cosido a mano*")
+        device.expect("3 / 3 pasos completados")
         diagnosis, plan, knowledge, completed, outcome, before, after = device.database()
         assert completed == 3 and outcome == "repaired" and before > 0 and after > 0
         assert json.loads(diagnosis)["status"] == "candidate"
         assert json.loads(plan)["id"] == "woven-patch" and json.loads(plan)["url"].startswith("https://")
         result = {"platform": "Android emulator", "serial": args.serial, "mode": "airplane",
+                  "languages_checked": ["es", "en"] if not args.resume_diagnosis else ["es"],
                   "fixture": args.photo.name if args.photo else "CISUTAC held-out photo already on emulator",
                   "model": json.loads(diagnosis), "knowledge_version": knowledge, "procedure": "woven-patch",
                   "completed_steps": completed, "outcome": outcome, "before_bytes": before, "after_bytes": after}
@@ -138,6 +159,7 @@ def smoke(args):
     finally:
         if prior_airplane != "1":
             device.shell("cmd", "connectivity", "airplane-mode", "disable")
+        device.shell("am", "start", "-n", ACTIVITY)
 
 
 if __name__ == "__main__":
@@ -147,5 +169,6 @@ if __name__ == "__main__":
     parser.add_argument("--apk", type=Path)
     parser.add_argument("--photo", type=Path)
     parser.add_argument("--report", type=Path)
+    parser.add_argument("--screenshots", type=Path)
     parser.add_argument("--resume-diagnosis", action="store_true")
     smoke(parser.parse_args())
